@@ -2,9 +2,9 @@
 
 ## Setup
 
-Follow the setup instructions for combine with CMSSW_10_2_13
-Install `rhalphalib` locally (there may be some modifications necessary, things don't always play nice by default)
-Clone this repo into `CMSSW_10_2_13/src/`
+Follow the setup instructions for combine with CMSSW_10_2_13.
+Install `rhalphalib` locally (there may be some modifications necessary, things don't always play nice by default).
+Clone this repo into `CMSSW_10_2_13/src/`.
 
 ## Running
 
