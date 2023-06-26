@@ -6,6 +6,15 @@ Follow the setup instructions for combine with CMSSW_10_2_13.
 Install `rhalphalib` locally (there may be some modifications necessary, things don't always play nice by default).
 Clone this repo into `CMSSW_10_2_13/src/`.
 
+### To install rhalphalib:
+
+1. Install rhalphalib
+   git checkout -b phitautau origin/phitautau
+2. In CMSSW_10_2_13
+   scram b
+   pip install flake8 --user
+   pip install --user https://github.com/drankincms/rhalphalib/archive/master.zip
+
 ## Running
 
 `runLimits.sh` is the top script, which will call the other scripts in this directory as needed. An example invocation is below:
