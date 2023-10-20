@@ -143,8 +143,8 @@ class Cards:
                 "nom": {
                     "sig": slices["highmet"],
                     "top_cr": slices["highmet"],
-                    "wlnu_cr": slices["lowmet"],
-                    "qcd_cr": slices["lowmet"],
+                    "wlnu_cr": slices["highmet"],
+                    "qcd_cr": slices["highmet"],
                 },
                 "fail": {
                     "sig": slices["lowtohighmet"],
@@ -581,7 +581,7 @@ class Cards:
 
     def build_channel(
         self,
-        category,
+        analysis_region,
         region,
         hchannel,
         qcd,
@@ -591,7 +591,7 @@ class Cards:
         debug=False,
     ):
         cat = self.__name
-        ch = rl.Channel(f"{category}{region}{cat}{self.year}")
+        ch = rl.Channel(f"{analysis_region}{region}{cat}{self.year}")
 
         vals = {}
         for sample in hchannel.identifiers("sample"):
@@ -601,12 +601,12 @@ class Cards:
                 sample.name == "data_obs"
                 and region == "pass"
                 and not unblind
-                and category == "SR"
+                and analysis_region == "SR"
             ):
                 continue
 
             logging.debug(
-                f"Building template for sample {sample} and region {region} and category {category}, singlebin {singlebin}"
+                f"Building template for sample {sample} and region {region} and analysis_region {analysis_region}, singlebin {singlebin}"
             )
             # get template from that MC/data sample
             h = hchannel[sample]
@@ -659,7 +659,8 @@ class Cards:
                 # add sample
                 ch.addSample(sample_template)
 
-        if not unblind and region == "pass":
+        # blind signal region
+        if not unblind and region == "pass" and analysis_region == "SR":
             ch.setObservation(
                 (
                     np.zeros(len(self.mttone.binning) - 1)
