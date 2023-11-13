@@ -282,10 +282,10 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
                 ],
                 "wlnu_cr": [
                     hists_qcd["qcd_cr"]["nom"]["fail"],
-                    ##qcd_ratio["wlnu_cr"]["sig_to_qcd"][region],
-                    ##ratio_F["wlnu_cr"]["noqcdcr_fail"][region],
-                    qcd_ratio["wlnu_cr"]["nom_to_fail"][region],
-                    ratio_F["wlnu_cr"]["qcdcr_nom"][region],
+                    qcd_ratio["wlnu_cr"]["sig_to_qcd"][region],
+                    ratio_F["wlnu_cr"]["noqcdcr_fail"][region],
+                    #qcd_ratio["wlnu_cr"]["nom_to_fail"][region],
+                    #ratio_F["wlnu_cr"]["qcdcr_nom"][region],
                 ],
             },
             2: {
@@ -362,7 +362,9 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
         logger.info(f"Building {region}-qcd predictions")
         qcdpred = build_qcdpred(region, c.islephad)
 
-        """
+        print("Signal regions singlebin: " + str(singlebin))
+        print("Control regions singlebin: " + str(singlebinCR))
+
         # add signal region
         logger.info(f"Building {region}-signal region")
         c.build_channel(
@@ -384,7 +386,7 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
             qcdpred["top_cr"],
             singlebin=singlebinCR,
         )
-        """
+        
 
         # add wlnu control region
         logging.info(f"Building {region}-wlnuCR region")
@@ -396,8 +398,12 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
             singlebin=singlebinCR,
         )
 
+        print("Signal regions singlebin: " + str(singlebin))
+        print("Control regions singlebin: " + str(singlebinCR))
+
     for analysis_region in ["SR", "topCR", "wlnuCR"]:
         region_str = "" if analysis_region == "SR" else analysis_region
+        
         str_fail = f"{region_str}fail{cat}{year}"
         str_loose = f"{region_str}loosepass{cat}{year}"
         str_pass = f"{region_str}pass{cat}{year}"

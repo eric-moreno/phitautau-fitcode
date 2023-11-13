@@ -591,7 +591,10 @@ class Cards:
         debug=False,
     ):
         cat = self.__name
-        ch = rl.Channel(f"{analysis_region}{region}{cat}{self.year}")
+        
+        analysis_region_str = "" if analysis_region == "SR" else analysis_region
+
+        ch = rl.Channel(f"{analysis_region_str}{region}{cat}{self.year}")
 
         vals = {}
         for sample in hchannel.identifiers("sample"):
@@ -673,10 +676,11 @@ class Cards:
 
         # add channel
         self.model.addChannel(ch)
-
+        
         return vals
 
     def set_expectation(self, str_fail, str_loose, str_pass):
+        print(str_pass)
         # TODO: Introduce unifiedBkgEff if necessary?
 
         # top normalization
