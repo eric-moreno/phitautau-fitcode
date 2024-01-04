@@ -28,3 +28,11 @@ While the fitting is expected to run remotely, the plotting etc can easily be ru
 ```
 ./plotPhi.sh Dec12_2017 34 2017
 ```
+
+## Old scripts
+
+```
+python test/makeCardsPhi.py --hist condor/Nov30_2017_UL/hists_sum_ --year 2017 --lumi 41.5 --tag Dec12_2017 --label 34 --hPtBinsLep None --hPtCut -1 --hPtBinsHad None --shapeRegionsHad fail loosepass loosepass --metCutLep 75. --lowMetCutHad 75. --unblind --singleBinLepCR --singleBinHadFail --highmassone --unifiedBkgEff
+
+python test/makeCardsPhi.py --hist /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/condor/Nov30_2017_UL/hists_sum_ --year 2017 --lumi 41.5 --tag Dec12_2017 --label 34 --hPtBinsLep None --hPtCut -1 --hPtBinsHad None --shapeRegionsHad fail loosepass loosepass --metCutLep 75. --lowMetCutHad 75. --unblind --singleBinLepCR --singleBinHadFail --highmassone --unifiedBkgEff
+```
