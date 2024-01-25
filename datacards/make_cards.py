@@ -182,7 +182,6 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
     :param year
     :type int
     """
-
     logger = logging.getLogger("create-cards")
 
     # create cards class (holds default settings)
@@ -350,11 +349,11 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
     for region in c.nnregions:
         # singlebin: integrate prediction over mass bins
         if c.islephad:
-            singlebinCR = True
+            singlebinCR = False
             singlebinFail = False
         else:
             singlebinCR = False
-            singlebinFail = True
+            singlebinFail = False
         singlebin = singlebinFail and region == "fail"
         singlebinCR = singlebinCR or singlebin
 

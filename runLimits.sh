@@ -23,7 +23,8 @@ elif [[ "$2" == "full200" ]]; then
   fullstr=" --full"
   masslist=(200)
   #addargs='" --freezeParameters jescale,jeresol,l1prefire,uescale"'
-  addargs='""'
+  #addargs='" --freezeParameters allConstrainedNuisances"'
+  #addargs='""'
 elif [[ "$2" == "fullnopass" ]]; then
   fullstr=" --full"
   masslist=(125)
@@ -50,11 +51,12 @@ fi
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --addargs '" --freezeParameters wlnueffSF_hadhad,wlnueffSF_hadel,wlnueffSF_hadmu,topeffSF_hadhad,topeffSF_hadel,topeffSF_hadmu,wlnuLeffSF_hadhad,wlnuLeffSF_hadel,wlnuLeffSF_hadmu,topLeffSF_hadhad,topLeffSF_hadel,topLeffSF_hadmu,toppt,ztt_eff_hadhad,ztt_eff_hadel,ztt_eff_hadmu,r_ztt_hadhad,r_ztt_hadel,r_ztt_hadmu,wlnunormSF_hadhad,wlnunormSF_hadel,wlnunormSF_hadmu,topnormSF_hadhad,topnormSF_hadel,topnormSF_hadmu"'
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} #--addargs '" --freezeParameters wlnueffSF_hadhad,wlnueffSF_hadel,wlnueffSF_hadmu,topeffSF_hadhad,topeffSF_hadel,topeffSF_hadmu,wlnuLeffSF_hadhad,wlnuLeffSF_hadel,wlnuLeffSF_hadmu,topLeffSF_hadhad,topLeffSF_hadel,topLeffSF_hadmu"'
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig 0 --mode AsymptoticLimits --masses ${masslist[@]} --addargs '" --freezeParameters r_dy_hadmu,dy_eff_hadmu,r_dy_hadel,dy_eff_hadel,r_dy_hadhad,dy_eff_hadhad"' --nopass
-#python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig 0 --mode AsymptoticLimits --masses ${masslist[@]} --addargs '"-t -1"'
-python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass}
-
+#python reloadFromPkl.py --indir /uscms_data/d3/drasnkin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig 0 --mode AsymptoticLimits --masses ${masslist[@]} --addargs '"-t -1"'
+python reloadFromPkl.py --indir /uscms_data/d3/eamoreno/Analysis/phitautau/CMSSW_10_2_13/src/phitautau-fitcode/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass}
+#python reloadFromPkl.py --indir /uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass}
+echo "here"
 OUTPUT=($1)
- 
+
 for MODEL in ${modellist[@]}; do
   echo ${MODEL}
   for MASS in ${masslist[@]}; do
