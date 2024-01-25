@@ -634,7 +634,10 @@ class Cards:
                 )
 
             if sample.name == "data_obs":
-                ch.setObservation(template, read_sumw2=True)
+                print("XXXX")
+                print("Data", template)
+                ch.setObservation(template[:-1])
+                #ch.setObservation(template, read_sumw2=True)
             else:
                 sample_template = rl.TemplateSample(
                     f"{ch.name}_{sample.name}",
