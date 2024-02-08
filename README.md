@@ -15,20 +15,47 @@ Clone this repo into `CMSSW_10_2_13/src/`.
    pip install flake8 --user
    pip install --user https://github.com/drankincms/rhalphalib/archive/master.zip
 
+## Card Making
+First, make your cards!
+```
+python3 make_cards.py --hist /uscms_data/d3/eamoreno/Analysis/phitautau/boostedhiggs/condor/Jun28_2017_UL/hists_sum_  --year 2017 --cat hadel --cat hadmu --cat hadhad --tag Feb7_2017_UL/1
+```
+
+Dylan's samples (messed up massreg hadhad) - `/uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/condor/Nov30_2017_UL/hists_sum_`
+
+Eric's samples (new massreg hadhad retraining) - `/uscms_data/d3/eamoreno/Analysis/phitautau/boostedhiggs/condor/Jun28_2017_UL/hists_sum_`
+
 ## Running
 
-`runLimits.sh` is the top script, which will call the other scripts in this directory as needed. An example invocation is below:
+Next run limits!
+
+`runLimits.sh` is the top script, which will call the other scripts in this directory as needed. An example invocation is below where you call ALL the limits run:
 ```
-./runLimits.sh Dec12_2017/34 full200 hadel hadmu hadhad
+./runLimits.sh Feb7_2017_UL/1 full hadel hadmu hadhad
 ```
+
+If you want to try a specific channel (e.g. hadel) and only one template(e.g. m200) you can run 
+```
+./runLimits.sh Feb7_2017_UL/1 full200 hadel 
+```
+
+you might need to hit `runLimits.sh` for specifics - for example there is `-t -1 --toysFrequentist` enabled right now
 
 ## Local scripts
 
-While the fitting is expected to run remotely, the plotting etc can easily be run locally. The scripts to copy down the necessary files are in `local_scripts/`. A standard invocation is below:
+While the fitting is expected to run remotely, the plotting etc can easily be run locally. But they don''t need to be. This makes pretty mass plots. The scripts to copy down the necessary files are in `local_scripts/`. A standard invocation is below:
 ```
-./plotPhi.sh Dec12_2017 34 2017
+cd local_scripts/
+./plotPhi.sh Feb7_2017_UL 1 2017
 ```
 
+## Make Brazil-band Plots (Run Phi Limits)
+
+To run this, you should have multiple-mass limits run. If you just run one limit the plot will be of zero width and fail. Here is an example: 
+
+```
+./makePhiLimits.sh Feb7_2018_UL/1
+```
 ## Old scripts
 
 ```
@@ -36,3 +63,9 @@ python test/makeCardsPhi.py --hist condor/Nov30_2017_UL/hists_sum_ --year 2017 -
 
 python test/makeCardsPhi.py --hist /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/condor/Nov30_2017_UL/hists_sum_ --year 2017 --lumi 41.5 --tag Dec12_2017 --label 34 --hPtBinsLep None --hPtCut -1 --hPtBinsHad None --shapeRegionsHad fail loosepass loosepass --metCutLep 75. --lowMetCutHad 75. --unblind --singleBinLepCR --singleBinHadFail --highmassone --unifiedBkgEff
 ```
+
+
+## New Information
+
+
+
