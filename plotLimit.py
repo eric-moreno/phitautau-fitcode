@@ -31,6 +31,9 @@ parser.add_argument(
     '--logx', action='store_true', help="""Draw x-axis in log scale""")
 args = parser.parse_args()
 
+
+print('Creating Limit for input ', args.input)
+
 # Style and pads
 ModTDRStyle()
 canv = ROOT.TCanvas('limit', 'limit')

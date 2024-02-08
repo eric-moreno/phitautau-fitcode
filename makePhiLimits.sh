@@ -3,6 +3,8 @@
 ORIGPWD=${PWD}
 cd $1
 MASSRANGE=(30 40 50 75 100 125 150 200)
+#MASSRANGE=(30 50 100 125 150 200)
+#MASSRANGE=(10 20 30 40 50 75 100 125 150 200 250 300)
 eval "combineTool.py -M CollectLimits hadelModel_m{`echo ${MASSRANGE[@]} | tr ' ' ,`}/*AsymptoticLimits* -o limits_hadel.json"
 eval "combineTool.py -M CollectLimits hadmuModel_m{`echo ${MASSRANGE[@]} | tr ' ' ,`}/*AsymptoticLimits* -o limits_hadmu.json"
 eval "combineTool.py -M CollectLimits hadhadModel_m{`echo ${MASSRANGE[@]} | tr ' ' ,`}/*AsymptoticLimits* -o limits_hadhad.json"

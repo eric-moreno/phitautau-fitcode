@@ -59,9 +59,11 @@ class Cards:
         self.pt_min = 300
 
         # signal names
-        self.doHtt = True
+        self.doHtt = False
         self.signame = "htt125" if self.doHtt else "phitt"
         self.sigexname = "htt125" if self.doHtt else "phitt50"
+        #print(self.signame)
+        
 
         # neural network cuts
         # pass region
@@ -109,6 +111,10 @@ class Cards:
             else:
                 self.sample_groups[f"phitt{m}"] = [f"phi{m}"]
 
+
+        #print(self.doHtt)
+        #print(self.sample_groups["ignore"])
+        #sys.exit()
         # met cuts
         cuts = {
             "lowmet": 20.0,

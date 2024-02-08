@@ -106,12 +106,12 @@ def reloadPkl(args):
             os.system("sed -i 's/text2workspace.py.*$/& --channel-masks/' %s/%s_m%s/build_gof.sh"%(args.outdir,m,mass))
 
             if args.nopass:
-                os.system("sed -i 's/ptbin[0-9]passhad[muelhad]*%s=ptbin[0-9]passhad[muelhad]*%s.txt//g'  %s/%s_m%s/build.sh"%(year,year,outdirname,m,mass))
+                os.system("sed -i 's/passhad[muelhad]*%s=passhad[muelhad]*%s.txt//g'  %s/%s_m%s/build.sh"%(year,year,outdirname,m,mass))
 
             maskstr = ''
             if args.mask:
                 os.system("sed -i 's/text2workspace.py.*$/& --channel-masks/' %s/%s_m%s/build.sh"%(args.outdir,m,mass))
-                maskstr = '--setParameters mask_ptbin0passhadel{0}=1,mask_ptbin1passhadel{0}=1,mask_ptbin0passhadmu{0}=1,mask_ptbin1passhadmu{0}=1,mask_ptbin0passhadhad{0}=1,mask_ptbin1passhadhad{0}=1,mask_ptbin2passhadhad{0}=1,mask_ptbin3passhadhad{0}=1'.format(year)
+                maskstr = '--setParameters mask_passhadel{0}=1,mask_passhadel{0}=1,mask_passhadmu{0}=1,mask_passhadmu{0}=1,mask_passhadhad{0}=1,mask_passhadhad{0}=1,mask_passhadhad{0}=1,mask_passhadhad{0}=1'.format(year)
             #os.system("echo combine -M %s %s_combined.root -m %s --rMin -1 --rMax 5 -t -1 -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(args.mode,m,mass,m,args.addargs,maskstr,args.outdir,m,mass))
             #if args.full:
             #    os.system("echo combine -M FitDiagnostics %s_combined.root -m %s --rMin -1 --rMax 5 -t -1 --expectSignal %s --saveShapes --saveWithUncertainties -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,m,args.addargs,maskstr,args.outdir,m,mass))
@@ -129,8 +129,8 @@ def reloadPkl(args):
                 os.system("echo plotImpacts.py -i impacts_m%s.json -o impacts_%s >> %s/%s_m%s/build.sh"%(mass,m,outdirname,m,mass))
                 #need to use \# not # for making comments
 
-            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly --setParametersForFit mask_ptbin0passhadel%s=1 --setParametersForEval mask_ptbin0passhadel%s=0 --freezeParameters r --setParameters r=0,mask_ptbin0passhadel%s=1 -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh"%(m,mass,year,year,year,outdirname,m,mass))
-            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly_data --setParametersForFit mask_ptbin0passhadel%s=1 --setParametersForEval mask_ptbin0passhadel%s=0 --freezeParameters r --setParameters r=0,mask_ptbin0passhadel%s=1 >> %s/%s_m%s/build_gof.sh"%(m,mass,year,year,year,outdirname,m,mass))
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly --setParametersForFit mask_passhadel%s=1 --setParametersForEval mask_passhadel%s=0 --freezeParameters r --setParameters r=0,mask_passhadel%s=1 -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh"%(m,mass,year,year,year,outdirname,m,mass))
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly_data --setParametersForFit mask_passhadel%s=1 --setParametersForEval mask_passhadel%s=0 --freezeParameters r --setParameters r=0,mask_passhadel%s=1 >> %s/%s_m%s/build_gof.sh"%(m,mass,year,year,year,outdirname,m,mass))
             os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_sb -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh"%(m,mass,outdirname,m,mass))
             os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_sb_data >> %s/%s_m%s/build_gof.sh"%(m,mass,outdirname,m,mass))
             os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_bonly_CRonly_data.GoodnessOfFit.mH%s.root higgsCombine_result_bonly_CRonly.GoodnessOfFit.mH%s.123456.root -m %s -o gof_CRonly.json >> %s/%s_m%s/build_gof.sh"%(mass,mass,mass,outdirname,m,mass))
