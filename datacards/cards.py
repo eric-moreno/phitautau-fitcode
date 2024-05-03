@@ -64,7 +64,6 @@ class Cards:
         self.sigexname = "htt125" if self.doHtt else "phitt50"
         #print(self.signame)
         
-
         # neural network cuts
         # pass region
         self.nnCut = {
@@ -181,7 +180,7 @@ class Cards:
         self.nnregions = ["fail", "loosepass", "pass"]
 
         # variation of background yields for systematics
-        self.variations = ["nom", "dn", "up"]
+        self.variations = ["nom", "dn", "up"]#, "dn2", "up2"]
 
         # initialize model
         self.model = rl.Model(f"{cat}Model")
@@ -200,50 +199,130 @@ class Cards:
         self.logger.info(f"Initializing nuisances")
         cat = self.__name
 
-        # add UE and JES/JER
-        syst_dict = {
-            samp: {
-                "uescale": [
-                    rl.NuisanceParameter("uescale", "shape"),
-                    "UESDown",
-                    "UESUp",
-                ],
-                "jescale": [
-                    rl.NuisanceParameter("jescale", "shape"),
-                    "JESDown",
-                    "JESUp",
-                ],
-                "jeresol": [
-                    rl.NuisanceParameter("jeresol", "shape"),
-                    "JERDown",
-                    "JERUp",
-                ],
-            }
-            for samp in self.sample_groups
+        #add UE and JES/JER
+        # syst_dict = {
+        #     samp: {
+        #         "uescale": [
+        #             rl.NuisanceParameter("uescale", "shape"),
+        #             "UESDown",
+        #             "UESUp",
+        #         ],
+        #         "jescale": [
+        #             rl.NuisanceParameter("jescale", "shape"),
+        #             "JESDown",
+        #             "JESUp",
+        #         ],
+        #         "jeresol": [
+        #             rl.NuisanceParameter("jeresol", "shape"),
+        #             "JERDown",
+        #             "JERUp",
+        #         ],
+        #     }
+        #     for samp in self.sample_groups
+        #     if samp not in ["data_obs", "ignore", "multijet"]
+        # }
+
+        syst_dict = { 
+                samp: {}
+            for samp in self.sample_groups 
             if samp not in ["data_obs", "ignore", "multijet"]
         }
 
-        # add toppt uncertainty for top region
-        syst_dict["top"]["toppt"] = [
-            rl.NuisanceParameter("toppt", "shape"),
-            "nominal",
-            "TopPtReweightUp",
-        ]
+        lumi_list = {
+            "2016APV": {"lumi_16APV": rl.NuisanceParameter("CMS_lumi_16APV", "lnN"), "lumi_all": rl.NuisanceParameter("CMS_lumi_all", "lnN")},
+            "2016": {"lumi_16": rl.NuisanceParameter("CMS_lumi_16", "lnN"), "lumi_all": rl.NuisanceParameter("CMS_lumi_all", "lnN")},
+            "2017": {"lumi_17": rl.NuisanceParameter("CMS_lumi_17", "lnN"), "lumi_all": rl.NuisanceParameter("CMS_lumi_all", "lnN"), "lumi_1718": rl.NuisanceParameter("CMS_lumi_1718", "lnN")},
+            "2018": {"lumi_18": rl.NuisanceParameter("CMS_lumi_18", "lnN"), "lumi_all": rl.NuisanceParameter("CMS_lumi_all", "lnN"), "lumi_1718": rl.NuisanceParameter("CMS_lumi_1718", "lnN")},
+        }[self.year]
+        
+        syst_dict_JER = {    
+            "uescale": [
+                rl.NuisanceParameter("uescale", "shape"),
+                "UESDown",
+                "UESUp",
+            ],
+            "jescale": [
+                rl.NuisanceParameter("jescale", "shape"),
+                "JESDown",
+                "JESUp",
+            ],
+            "jeresol": [
+                rl.NuisanceParameter("jeresol", "shape"),
+                "JERDown",
+                "JERUp",
+            ],
+        }
 
-        # add prefire uncertainty
+        self.syst_dict_JER = syst_dict_JER
+
+        # syst_dict_JER = {    
+        #     "uescale":
+        #         rl.NuisanceParameter("uescale", "shape"),
+        #     "jescale":
+        #         rl.NuisanceParameter("jescale", "shape"),
+        #     "jeresol":
+        #         rl.NuisanceParameter("jeresol", "shape"),
+        #     "l1prefire": 
+        #         rl.NuisanceParameter("l1prefire", "shape"),
+        # }
+
+        syst_dict_norm = {
+            "CMS_vvqq_norm": rl.NuisanceParameter("CMS_vvqq_norm", "lnN"),
+            "CMS_top_norm": rl.NuisanceParameter("CMS_top_norm", "lnN"),
+            "CMS_wlnu_norm": rl.NuisanceParameter("CMS_wlnu_norm", "lnN") ,
+            "CMS_dy_norm": rl.NuisanceParameter("CMS_dy_norm", "lnN"),
+            f"CMS_trig_{cat}": rl.NuisanceParameter(f"CMS_trig_{cat}", "lnN"),
+            f"CMS_id_{cat}": rl.NuisanceParameter(f"CMS_id_{cat}", "lnN"),
+        
+        }
+        
         if self.year not in ["2018"]:
-            for sample in syst_dict:
-                syst_dict[sample]["l1prefire"] = [
-                    rl.NuisanceParameter("l1prefire", "shape"),
-                    "L1PreFiringDown",
-                    "L1PreFiringUp",
-                ]
+            syst_dict_prefire = {"l1prefire": [
+                rl.NuisanceParameter("l1prefire", "shape"),
+                "L1PreFiringDown",
+                "L1PreFiringUp",
+            ]}
+        else:
+            syst_dict_prefire = {}
+        #syst_dict_prefire = {}
+        
+        # add prefire uncertainty
+        # if self.year not in ["2018"]:
+        #     for sample in syst_dict:
+        #         syst_dict[sample]["l1prefire"] = [
+        #             rl.NuisanceParameter("l1prefire", "shape"),
+        #             "L1PreFiringDown",
+        #             "L1PreFiringUp",
+        #         ]
 
+        syst_dict_cat = syst_dict 
+        syst_dict_UPDOWN = syst_dict_JER | syst_dict_prefire 
+        syst_dict = syst_dict_norm | lumi_list 
+        # syst_dict["top"] = [
+        #    rl.NuisanceParameter("toppt", "shape"),
+        #    "nominal",
+        #    "TopPtReweightUp",
+        # ]
+        # add toppt uncertainty for top region
+        
+        #syst_dict["top"]["toppt"] = [
+        #      rl.NuisanceParameter("toppt", "shape"),
+        #      "nominal",
+        #      "TopPtReweightUp",
+        #  ]
+
+        #print(syst_dict)
+        #print(syst_dict.keys())
+        #sys.exit()
         # dictionary of systematic uncertainty variations to build from existing mass templates
         if no_syst:
             self.syst_dict = {}
+            self.syst_dict_cat = syst_dict_cat
+            self.syst_dict_UPDOWN = {}
         else:
             self.syst_dict = syst_dict
+            self.syst_dict_cat = syst_dict_cat
+            self.syst_dict_UPDOWN = syst_dict_UPDOWN
 
         # QCD normalization
         self.qcdnormSF = rl.IndependentParameter(f"qcdnormSF_{cat}", 1.0, 0, 10)
@@ -251,6 +330,10 @@ class Cards:
         self.qcdnormSF_wlnu = rl.IndependentParameter(
             f"qcdnormSF_wlnu_{cat}", 1.0, 0, 10
         )
+
+        # Bkg efficiency
+        self.bkgeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 10)
+        self.bkgLeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 10)
 
         # Top efficiency
         self.topeffSF = rl.IndependentParameter(f"topeffSF_{cat}", 1.0, 0, 10)
@@ -272,21 +355,25 @@ class Cards:
             if self.mttbins_nom[ix] > self.highmass
         ]
         self.wlnu_highmass = [
-            rl.NuisanceParameter(f"wlnuhighmass_bin{ix}_{cat}", "shape")
-            for ix in self.mttrange
-            if self.mttbins_nom[ix] > self.highmass
-        ]
+             rl.NuisanceParameter(f"wlnuhighmass_bin{ix}_{cat}", "shape")
+             for ix in self.mttrange
+             if self.mttbins_nom[ix] > self.highmass
+         ]
         highmassx = -1
         for ix in self.mttrange:
             if self.mttbins_nom[ix] > self.highmass:
                 if highmassx == -1:
                     highmassx = ix
         self.highmassx = highmassx
-
+        
         # QCD shape
         self.qcd_fail = rl.NuisanceParameter(f"qcd_Rfail_{cat}", "shape")
         self.qcd_loosepass = rl.NuisanceParameter(f"qcd_Rloosepass_{cat}", "shape")
         self.qcd_pass = rl.NuisanceParameter(f"qcd_Rpass_{cat}", "shape")
+
+        # mass scale 
+        self.m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
+        self.m_scale_bkg = rl.NuisanceParameter(f"massscale_bkg_{cat}", "shape")
 
         # add uncertainty for low mass
         self.qcd_lowmass = [
@@ -305,7 +392,11 @@ class Cards:
             if self.mttbins_nom[ix] < self.lowqcdmass
         ]
 
-    def get_qcd(self, hists: dict, region: str, default: float = 1.0):
+        # self.qcd_lowmass = rl.NuisanceParameter(f"qcd_lowmass_bin_{cat}", "shape")
+        # self.qcd_lowmass_top = rl.NuisanceParameter(f"qcd_lowmass_top_bin_{cat}", "shape")
+        # self.qcd_lowmass_wlnu = rl.NuisanceParameter(f"qcd_lowmass_wlnu_bin_{cat}", "shape")
+        
+    def get_qcd(self, hists: dict, region: str, default: float = 0.0):
         """
         Get QCD estimate by subtracting other_MC from data.
 
@@ -380,11 +471,11 @@ class Cards:
         """
         cat = self.__name
         syst_template = sample_template
+        
         if (
             sample.name == "htt125" or sample.name == "dy" or "phi" in sample.name
         ) and not singlebin:
             # why not use rl mass shift functions?
-            m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
 
             nominal = self._get_region(h, region)
             nom = self._events(nominal, clip=False)
@@ -418,13 +509,57 @@ class Cards:
                 ]
             )
             shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
-
+            
             syst_template.setParamEffect(
-                m_scale,
+                self.m_scale,
                 np.divide(shift_dn, nom, out=np.ones_like(nom), where=nom > 0.0),
                 np.divide(shift_up, nom, out=np.ones_like(nom), where=nom > 0.0),
             )
+        
+        if (
+            sample.name == "top" or sample.name == "wlnu"
+        ) and not singlebin:
+            # why not use rl mass shift functions?
 
+            nominal = self._get_region(h, region)
+            nom = self._events(nominal, clip=False)
+            nom_full = nominal[0]
+            shift_dn = nom_full[self.lowbin - 1 : self.highbin - 1]
+            shift_up = nom_full[
+                self.lowbin + 1 : self.highbin + 1 if self.highbin != -1 else None
+            ]
+            shiftwidth = self.mttbins[1] - self.mttbins[0]
+
+            dnfrac = np.array(
+                [
+                    shiftwidth
+                    / (
+                        self.mttbins[self.lowbin + ib]
+                        - self.mttbins[self.lowbin + ib - 1]
+                    )
+                    for ib in range(len(nom))
+                ]
+            )
+            shift_dn = shift_dn * dnfrac + nom * (1.0 - dnfrac)
+
+            upfrac = np.array(
+                [
+                    shiftwidth
+                    / (
+                        self.mttbins[self.lowbin + ib + 2]
+                        - self.mttbins[self.lowbin + ib + 1]
+                    )
+                    for ib in range(len(nom))
+                ]
+            )
+            shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
+            
+            syst_template.setParamEffect(
+                self.m_scale_bkg,
+                np.divide(shift_dn, nom, out=np.ones_like(nom), where=nom > 0.0),
+                np.divide(shift_up, nom, out=np.ones_like(nom), where=nom > 0.0),
+            )
+        
         return syst_template
 
     def systs_shape(self, h, region, sample, sample_template, singlebin=False):
@@ -433,13 +568,18 @@ class Cards:
         """
 
         syst_template = sample_template
-
-        if sample.name in self.syst_dict:
+        #print(region)
+        #print(sample.name)
+        #print(self.syst_dict)
+        #print('done')
+        if sample.name in ["data_obs", "ignore", "multijet"]: 
+            pass
+        else:
             tempint = self._get_region(h, region)
             nom = self._events(tempint)
 
-            for syst in self.syst_dict[sample.name]:
-                nuisance, syst_dn, syst_up = self.syst_dict[sample.name][syst]
+            for syst in self.syst_dict_UPDOWN:
+                nuisance, syst_dn, syst_up = self.syst_dict_UPDOWN[syst]
                 up = self._events(self._get_region(h, region, syst_up), clip=False)
                 dn = self._events(self._get_region(h, region, syst_dn))
                 up_var = (
@@ -457,6 +597,29 @@ class Cards:
                     np.array([np.sum(up_var)]) if singlebin else up_var,
                     np.array([np.sum(dn_var)]) if singlebin else dn_var,
                 )
+
+            if sample.name == "top":
+                nuisance, syst_dn, syst_up = rl.NuisanceParameter("toppt", "shape"), "nominal", "TopPtReweightUp"
+
+                up = self._events(self._get_region(h, region, syst_up), clip=False)
+                dn = self._events(self._get_region(h, region, syst_dn))
+                up_var = (
+                    np.divide(up, nom, out=np.ones_like(nom), where=nom > 0.0)
+                    if (up != nom).all()
+                    else np.ones_like(nom) * 1.001
+                )
+                dn_var = (
+                    np.divide(dn, nom, out=np.ones_like(nom), where=nom > 0.0)
+                    if (dn != nom).all()
+                    else np.ones_like(nom) * 0.999
+                )
+                syst_template.setParamEffect(
+                    nuisance,
+                    np.array([np.sum(up_var)]) if singlebin else up_var,
+                    np.array([np.sum(dn_var)]) if singlebin else dn_var,
+                )
+        #print(syst_template)
+        #print('syst template')
         return syst_template
 
     def systs_norm(self, region, events, qcd, sample, sample_template, singlebin=False):
@@ -469,7 +632,7 @@ class Cards:
 
         if sample.name == "top":
             syst_template.setParamEffect(
-                rl.NuisanceParameter("CMS_top_norm", "lnN"), 1.05
+                self.syst_dict["CMS_top_norm"], 1.10
             )
             if not singlebin:
                 for imx in range(len(self.top_highmass)):
@@ -495,7 +658,7 @@ class Cards:
 
         if sample.name == "wlnu":
             syst_template.setParamEffect(
-                rl.NuisanceParameter("CMS_wlnu_norm", "lnN"), 1.10
+                self.syst_dict["CMS_wlnu_norm"], 1.10
             )
             if not singlebin:
                 for imx in range(len(self.wlnu_highmass)):
@@ -519,26 +682,39 @@ class Cards:
                         ),
                     )
 
+        # if sample.name == "vvqq":
+        #     syst_template.setParamEffect(
+        #         rl.NuisanceParameter("CMS_vvqq_norm", "lnN"), 1.20
+        #     )
+        # if sample.name == "dy":
+        #     syst_template.setParamEffect(
+        #         rl.NuisanceParameter("CMS_vvqq_norm", "lnN"), 1.05
+        #     )
+
         if sample.name == "vvqq":
             syst_template.setParamEffect(
-                rl.NuisanceParameter("CMS_vvqq_norm", "lnN"), 1.20
+                self.syst_dict["CMS_vvqq_norm"], 1.20
             )
         if sample.name == "dy":
             syst_template.setParamEffect(
-                rl.NuisanceParameter("CMS_vvqq_norm", "lnN"), 1.05
+                self.syst_dict["CMS_dy_norm"], 1.05
             )
 
-        lumi_16 = rl.NuisanceParameter("CMS_lumi_16", "lnN")
-        lumi_17 = rl.NuisanceParameter("CMS_lumi_17", "lnN")
-        lumi_18 = rl.NuisanceParameter("CMS_lumi_18", "lnN")
-        lumi_all = rl.NuisanceParameter("CMS_lumi_all", "lnN")
-        lumi_1718 = rl.NuisanceParameter("CMS_lumi_1718", "lnN")
+
+        # lumi_16 = rl.NuisanceParameter("CMS_lumi_16", "lnN")
+        # lumi_16APV = rl.NuisanceParameter("CMS_lumi_16APV", "lnN")
+        # lumi_17 = rl.NuisanceParameter("CMS_lumi_17", "lnN")
+        # lumi_18 = rl.NuisanceParameter("CMS_lumi_18", "lnN")
+        # lumi_all = rl.NuisanceParameter("CMS_lumi_all", "lnN")
+        # lumi_1718 = rl.NuisanceParameter("CMS_lumi_1718", "lnN")
         lumi_list = {
-            "2016": [lumi_16, lumi_all],
-            "2017": [lumi_17, lumi_all, lumi_1718],
-            "2018": [lumi_18, lumi_all, lumi_1718],
+            "2016APV": ["lumi_16APV", "lumi_all"],
+            "2016": ["lumi_16", "lumi_all"],
+            "2017": ["lumi_17", "lumi_all", "lumi_1718"],
+            "2018": ["lumi_18", "lumi_all", "lumi_1718"],
         }[self.year]
         lumi_vals = {
+            "2016APV": [1.01, 1.006],
             "2016": [1.01, 1.006],
             "2017": [1.02, 1.009, 1.006],
             "2018": [1.015, 1.02, 1.002],
@@ -546,14 +722,15 @@ class Cards:
 
         if sample.name != "multijet":
             syst_template.setParamEffect(
-                rl.NuisanceParameter(f"CMS_trig_{cat}", "lnN"), 1.02
+                self.syst_dict[f"CMS_trig_{cat}"], 1.02
             )
             if self.islephad:
                 syst_template.setParamEffect(
-                    rl.NuisanceParameter(f"CMS_id_{cat}", "lnN"), 1.02
+                    self.syst_dict[f"CMS_id_{cat}"], 1.02
                 )
             for il, lumi in enumerate(lumi_list):
-                syst_template.setParamEffect(lumi, lumi_vals[il])
+                syst_template.setParamEffect(self.syst_dict[lumi], lumi_vals[il])
+
         else:
             if not singlebin:
                 qcd_shape_dn = np.divide(
@@ -578,10 +755,20 @@ class Cards:
                     np.minimum(qcd_shape_dn, qcd_shape_up),
                     np.maximum(qcd_shape_dn, qcd_shape_up),
                 )
-                # for imx in range(len(qcd_lowmass_wlnu)):
-                #    sample.setParamEffect(qcd_lowmass_wlnu[imx],
-                #                          np.array([qcd_shape_dn[imx] if ix==imx else 1. for ix in range(len(qcdpred))]),
-                #                          np.array([qcd_shape_up[imx] if ix==imx else 1. for ix in range(len(qcdpred))]))
+                for imx in range(len(self.qcd_lowmass_wlnu)):
+                    syst_template.setParamEffect(self.qcd_lowmass_top[imx],
+                                         np.array([qcd_shape_dn[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                         np.array([qcd_shape_up[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                    
+                    syst_template.setParamEffect(self.qcd_lowmass_wlnu[imx],
+                                         np.array([qcd_shape_dn[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                         np.array([qcd_shape_up[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                
+                # syst_template.setParamEffect(self.qcd_lowmass_top, qcd_shape_dn, qcd_shape_up)
+                    
+                # syst_template.setParamEffect(self.qcd_lowmass_wlnu, qcd_shape_dn, qcd_shape_up)
+                
+
 
         return syst_template
 
@@ -640,8 +827,8 @@ class Cards:
                 )
 
             if sample.name == "data_obs":
-                print("XXXX")
-                print("Data", template)
+                #print("XXXX")
+                #print("Data", template)
                 ch.setObservation(template[:-1])
                 #ch.setObservation(template, read_sumw2=True)
             else:
@@ -652,14 +839,20 @@ class Cards:
                     else rl.Sample.BACKGROUND,
                     template,
                 )
+
+
+                # MAYBE add in automcstats soon? 
+                #sample_template.autoMCStats(epsilon=1e-4)
+
+
                 # shape systematics
                 sample_template = self.systs_shape(
                     h, region, sample, sample_template, singlebin
                 )
                 # mass systematics - skipping for now
-                # sample_template = self.systs_mass(
-                #    h, region, ptslice, sample, sample_template, singlebin
-                # )
+                sample_template = self.systs_mass(
+                    h, region, sample, sample_template, singlebin
+                )
                 # norm systematics
                 sample_template = self.systs_norm(
                     region, events, qcd, sample, sample_template, singlebin
@@ -689,7 +882,7 @@ class Cards:
         return vals
 
     def set_expectation(self, str_fail, str_loose, str_pass):
-        print(str_pass)
+        
         # TODO: Introduce unifiedBkgEff if necessary?
 
         # top normalization
@@ -703,15 +896,26 @@ class Cards:
             + self.model[str_pass]["top"].getExpectation(nominal=True).sum()
         ) / self.model[str_fail]["top"].getExpectation(nominal=True).sum()
 
-        self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
+        # self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
+        # self.model[str_loose]["top"].setParamEffect(
+        #     self.topLeffSF, (1 - self.topLeffSF) * topLPF + 1
+        # )
+
+        self.model[str_pass]["top"].setParamEffect(self.bkgLeffSF, 1 * self.bkgLeffSF)
         self.model[str_loose]["top"].setParamEffect(
-            self.topLeffSF, (1 - self.topLeffSF) * topLPF + 1
+            self.bkgLeffSF, (1 - self.bkgLeffSF) * topLPF + 1
         )
 
-        self.model[str_loose]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
-        self.model[str_pass]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
+        # self.model[str_loose]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
+        # self.model[str_pass]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
+        # self.model[str_fail]["top"].setParamEffect(
+        #     self.topeffSF, (1 - self.topeffSF) * topPF + 1
+        # )
+
+        self.model[str_loose]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+        self.model[str_pass]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
         self.model[str_fail]["top"].setParamEffect(
-            self.topeffSF, (1 - self.topeffSF) * topPF + 1
+            self.bkgeffSF, (1 - self.bkgeffSF) * topPF + 1
         )
 
         # wlnu normalization
@@ -726,16 +930,31 @@ class Cards:
         # pass/(loose + pass)
         wlnuRLPF = 1.0 / (1.0 + (1.0 / wlnuLPF))
 
+        # self.model[str_pass]["wlnu"].setParamEffect(
+        #     self.wlnuLeffSF, 1 * self.wlnuLeffSF
+        # )
+        # self.model[str_loose]["wlnu"].setParamEffect(
+        #     self.wlnuLeffSF, (1 - self.wlnuLeffSF) * wlnuLPF + 1
+        # )
+
         self.model[str_pass]["wlnu"].setParamEffect(
-            self.wlnuLeffSF, 1 * self.wlnuLeffSF
+            self.bkgLeffSF, 1 * self.bkgLeffSF
         )
         self.model[str_loose]["wlnu"].setParamEffect(
-            self.wlnuLeffSF, (1 - self.wlnuLeffSF) * wlnuLPF + 1
+            self.bkgLeffSF, (1 - self.bkgLeffSF) * wlnuLPF + 1
         )
-        self.model[str_loose]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
-        self.model[str_pass]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
+
+        # self.model[str_loose]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
+        # self.model[str_pass]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
+        # self.model[str_fail]["wlnu"].setParamEffect(
+        #     self.wlnueffSF, (1 - self.wlnueffSF) * wlnuPF + 1
+        # )
+
+
+        self.model[str_loose]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+        self.model[str_pass]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
         self.model[str_fail]["wlnu"].setParamEffect(
-            self.wlnueffSF, (1 - self.wlnueffSF) * wlnuPF + 1
+            self.bkgeffSF, (1 - self.bkgeffSF) * wlnuPF + 1
         )
 
         # dy normalization
@@ -754,9 +973,9 @@ class Cards:
             / self.model[str_loose]["htt125"].getExpectation(nominal=True).sum()
         )
         self.model[str_pass]["htt125"].setParamEffect(self.dy_eff, 1 * self.dy_eff)
-        self.model[str_loose]["htt125"].setParamEffect(
-            self.dy_eff, (1 - self.dy_eff) * httLP + 1
-        )
+        # self.model[str_loose]["htt125"].setParamEffect(
+        #     self.dy_eff, (1 - self.dy_eff) * httLP + 1
+        # )
         # phitt
         if not self.doHtt:
             for m in self.masspoints:
@@ -779,4 +998,4 @@ class Cards:
                 )
             self.model[str_pass]["htt125"].setParamEffect(self.rh125, 1.10)
             self.model[str_loose]["htt125"].setParamEffect(self.rh125, 1.10)
-            self.model[str_loose]["htt125"].setParamEffect(self.rh125, 1.10)
+            self.model[str_fail]["htt125"].setParamEffect(self.rh125, 1.10)

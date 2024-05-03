@@ -41,10 +41,18 @@ def getQCDShape(c, hists):
         hists_qcd[region] = collections.defaultdict(dict)
         for invregion in c.invregions:
             for category in c.nnregions:
+                
+
                 data_hist = c.get_qcd(
                     hists[region][invregion],
                     category,
                 )
+
+                print('region: ', region)
+                print('invregion: ', invregion)
+                print('category: ', category)
+                print(data_hist)
+
                 hists_qcd[region][invregion][category] = data_hist
     return hists_qcd
 
@@ -74,7 +82,8 @@ def getRatioFail(c, hists_qcd):
         for rtag, ritem in regions_to_loop.items():
             ratio_F[pred_region][rtag] = collections.defaultdict(dict)
             region, rinv = ritem
-            region = pred_region if region == "noqcdcr" else region
+            #region = pred_region if region == "noqcdcr" else region
+            region = pred_region
             for num, denom in num_to_denom.items():
                 ratio_F[pred_region][rtag][num] = collections.defaultdict(dict)
                 for iv, var in enumerate(c.variations):
@@ -108,6 +117,8 @@ def getQCDRatio(c, hists_qcd):
         qcd_ratio[analysis_region] = collections.defaultdict(dict)
         for qcdregion in ["sig_to_qcd", "nom_to_fail"]:
             qcd_ratio[analysis_region][qcdregion] = collections.defaultdict(dict)
+
+            decode = {"sig_to_qcd": "fail", "nom_to_fail":'nom'}
 
             # denominator always comes from the QCD CR (fail-fail)
             denom = hists_qcd["qcd_cr"]["fail"]["fail"][0]
@@ -171,7 +182,7 @@ def getQCDRatio(c, hists_qcd):
     return qcd_ratio
 
 
-def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
+def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
     """
     Create cards.
 
@@ -182,6 +193,7 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
     :param year
     :type int
     """
+    #no_syst = False
     logger = logging.getLogger("create-cards")
 
     # create cards class (holds default settings)
@@ -204,11 +216,29 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
     logger.info(f"Extracting data-driven QCD histograms for each region")
     # get (data-MC)
     hists_qcd = getQCDShape(c, hists)
+    print(hists_qcd)
     # get ratio to fail region (["noqcdcr_fail","qcdcr_nom","qcdcr_fail"])
     ratio_F = getRatioFail(c, hists_qcd)
+    print("RATIO FAIL")
+    print(cat)
+    print("RATIO FAIL")
+    print(cat)
+    print("RATIO FAIL")
+    print(cat)
+    print("RATIO FAIL")
+    print(ratio_F)
     # get QCD ratio (["sig_to_qcd", "nom_to_fail"])
     qcd_ratio = getQCDRatio(c, hists_qcd)
+    print('QCD RATIO')
+    print(cat)
+    print('QCD RATIO')
+    print(cat)
+    print('QCD RATIO')
+    print(cat)
+    print('QCD RATIO')
+    print(qcd_ratio)
 
+    
     def build_qcdpred(region, islephad):
         """
         Build QCD prediction
@@ -310,17 +340,17 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
         if islephad:
             method_to_use = {
                 "sig": 3,  # average
-                "top_cr": 1,
-                "wlnu_cr": 1,
+                "top_cr": 3,
+                "wlnu_cr": 3,
             }
         else:
             method_to_use = {
                 "sig": 3,  # average
-                "top_cr": 1,
-                "wlnu_cr": 1,
+                "top_cr": 3,
+                "wlnu_cr": 3,
             }
 
-        qcd_index = {"nom": 0, "dn": 1, "up": 2}
+        qcd_index = {"nom": 0, "dn": 1, "up": 2}#, "dn2": 3, "up2": 4}
         qcd_pred = collections.defaultdict(dict)
         for key in qcdpred[1].keys():
             qcd_method = method_to_use[key]
@@ -328,20 +358,25 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
             for var, qid in qcd_index.items():
                 if qcd_method == 3:
                     shape_, ratio_, ratio_F_ = qcdpred[1][key]
-                    method1 = shape_[qid] * ratio_[var] * ratio_F_[var]
+                    method1 = shape_[qid] * ratio_[var] #* ratio_F_[var]
                     shape_, ratio_, ratio_F_ = qcdpred[2][key]
-                    method2 = shape_[qid] * ratio_[var] * ratio_F_[var]
+                    method2 = shape_[qid] * ratio_[var] #* ratio_F_[var]
+                    methodc = (method1 + method2) / 2
 
                     if var == "nom":
-                        qcd_pred[key][var] = (method1 + method2) / 2
+                        qcd_pred[key][var] = methodc
                     elif var == "dn":
-                        qcd_pred[key][var] = method1
+                        qcd_pred[key][var] = methodc+(methodc-method2)
                     elif var == "up":
-                        qcd_pred[key][var] = method2
+                        qcd_pred[key][var] = methodc-(methodc-method2)
+                    #elif var == "dn2":
+                    #    qcd_pred[key][var] = methodc+(methodc-method2)
+                    #elif var == "up2":
+                    #    qcd_pred[key][var] = methodc-(methodc-method2)
 
                 else:
                     shape_, ratio_, ratio_F_ = qcdpred[qcd_method][key]
-                    qcd_pred[key][var] = shape_[qid] * ratio_[var] * ratio_F_[var]
+                    qcd_pred[key][var] = shape_[qid] * ratio_[var] #* ratio_F_[var]
 
         return qcd_pred
 
@@ -361,8 +396,8 @@ def createCards(hist_dict, cat, year, odir, unblind=False, no_syst=False):
         logger.info(f"Building {region}-qcd predictions")
         qcdpred = build_qcdpred(region, c.islephad)
 
-        print("Signal regions singlebin: " + str(singlebin))
-        print("Control regions singlebin: " + str(singlebinCR))
+        #print("Signal regions singlebin: " + str(singlebin))
+        #print("Control regions singlebin: " + str(singlebinCR))
 
         # add signal region
         logger.info(f"Building {region}-signal region")
@@ -421,10 +456,12 @@ def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
 
     # luminosity to scale each sample
     lumi_dict = {
-        "2016": 36.5,
-        "2017": 41.5,
-        "2018": 59.8,
+        "2016APV": 19.52,
+        "2016": 16.81,
+        "2017": 41.48,
+        "2018": 59.83,
     }
+    
     lumi = lumi_dict[year]
 
     logger.info(f"Loading histograms from {year}")
@@ -507,6 +544,7 @@ def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
         logging.debug(
             f"Loading histograms from region {reg}, and scaling MC by {lumi}*{sigscale}"
         )
+        print(f"Loading histograms from region {reg}, and scaling MC by {lumi}*{sigscale}")
         xhist = getHist(
             h_dict[reg], "massreg", lumi, empty_dict, "", includeData, sigscale, [1]
         )

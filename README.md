@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Fitting code for PhiTauTau
 
 ## Setup
@@ -69,3 +70,20 @@ python test/makeCardsPhi.py --hist /uscms_data/d3/drankin/HTauTau/boostedhiggs_v
 
 
 
+=======
+### Installation
+
+```
+gh repo clone andrzejnovak/combine_postfits
+cd combine_postfits
+pip install -e .
+```
+
+### Run
+
+Example script to be modified as needed can be found in `make_plots.py. Run as:
+
+```
+ python make_plots.py -i hadelModel_m125/fitDiagnosticsTest.root -v --MC --style style_jeff.yml
+```
+>>>>>>> 3231241b96a7b8474965d04f8941b0e5564ed86f

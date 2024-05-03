@@ -86,7 +86,7 @@ def getQCDFromData(
     region,
     nnCut,
     nnCut_loose,
-    default=1.0,
+    default=0.0,
     systematic="nominal",
     mslice=None,
     unc_scale=0.0,
@@ -102,6 +102,8 @@ def getQCDFromData(
     """
 
     def clipZeros(data):
+        print('inside clipZeros')
+        print(data)
         data = np.clip(data, default, None)
         data[data == default] = 0.0
         return data
@@ -114,6 +116,9 @@ def getQCDFromData(
         systematic=systematic,
         mslice=mslice,
     )[0][lowmassbin:highmassbin]
+
+    print('qcd data full~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print(qcd_data_full)
 
     other_mc = intRegion(
         inhist,
@@ -128,7 +133,13 @@ def getQCDFromData(
         systematic=systematic,
         mslice=mslice,
     )
+    print('other_mc~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print(other_mc)
 
+    print('bins')
+    print(lowmassbin)
+    print(highmassbin)
+    
     qcd_data = clipZeros(qcd_data_full - other_mc[0][lowmassbin:highmassbin])
     # logging.debug(f"    Data: %s"%qcd_data_full)
     # logging.debug(f"    Other MC: %s"%other_mc[0][lowmassbin:highmassbin])
@@ -152,6 +163,17 @@ def getQCDFromData(
     qcd_data_w2[qcd_data_w2 == default] = 0.0
 
     qcd_data_int = hist.poisson_interval(qcd_data, qcd_data_w2)
+    print('poisson interval')
+    print(qcd_data_int)
+    print('qcd_data')
+    print(qcd_data)
+    print('qcd_data_altdn')
+    print(qcd_data_altdn)
+    print('qcd_data_altup')
+    print(qcd_data_altup)
+    print('qcd_data_w2')
+    print(qcd_data_w2)
+    
     qcd_temp_dn = np.minimum(
         np.array(
             [
