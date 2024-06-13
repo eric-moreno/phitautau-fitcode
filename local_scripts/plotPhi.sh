@@ -10,7 +10,7 @@ fi
 
 year=$3
 
-masslist=(200)
+masslist=(125)
 
 for mass in ${masslist[@]}; do
   if [[ -n "$2" ]]; then

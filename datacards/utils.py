@@ -9,6 +9,7 @@ def intRegion(
     theregion: str,
     nnCut: float,
     nnCut_loose: float,
+    nnCut_fail: float,
     systematic: str = "nominal",
     samplelist: list = None,
     mslice: slice = None,
@@ -27,8 +28,8 @@ def intRegion(
         theslice = slice(nnCut_loose, nnCut)
         overflow_str = "none"
     elif theregion == "fail":
-        theslice = slice(None, nnCut_loose)
-        overflow_str = "under"
+        theslice = slice(nnCut_fail, nnCut_loose)
+        overflow_str = "none"
     else:
         print("Unknown region", theregion)
         return
@@ -81,7 +82,7 @@ def intRegion(
     return the_int
 
 
-def getQCDFromData(
+def getQCDFromData_old(
     inhist,
     region,
     nnCut,
@@ -92,6 +93,7 @@ def getQCDFromData(
     unc_scale=0.0,
     lowmassbin=2,
     highmassbin=-1,
+    test = False
 ):
     """
     Get Data - other(MC) = QCD.
@@ -102,8 +104,6 @@ def getQCDFromData(
     """
 
     def clipZeros(data):
-        print('inside clipZeros')
-        print(data)
         data = np.clip(data, default, None)
         data[data == default] = 0.0
         return data
@@ -133,14 +133,31 @@ def getQCDFromData(
         systematic=systematic,
         mslice=mslice,
     )
-    print('other_mc~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print(other_mc)
-
-    print('bins')
-    print(lowmassbin)
-    print(highmassbin)
+    if test == True:
+        print('inhist', inhist)
+        print('region', region)
+        print('samplelist', [
+            s.name
+            for s in inhist.identifiers("sample")
+            if s.name != "data_obs" and s.name != "multijet"
+        ])
+        print('nnCut', nnCut)
+        print('nnCut_loose', nnCut_loose)
+        print('systematic', systematic)
+        print('mslice', mslice)
     
+    #print('other_mc~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    #print(other_mc)
+
+    #print('bins')
+    #print(lowmassbin)
+    #print(highmassbin)
+    
+
+
     qcd_data = clipZeros(qcd_data_full - other_mc[0][lowmassbin:highmassbin])
+    print("QCD DATA")
+    print(qcd_data)
     # logging.debug(f"    Data: %s"%qcd_data_full)
     # logging.debug(f"    Other MC: %s"%other_mc[0][lowmassbin:highmassbin])
     logging.debug(f"    Data - MC: %s" % qcd_data)
@@ -163,6 +180,12 @@ def getQCDFromData(
     qcd_data_w2[qcd_data_w2 == default] = 0.0
 
     qcd_data_int = hist.poisson_interval(qcd_data, qcd_data_w2)
+    #print('other mc')
+    #print(other_mc)
+    print('other mc 0')
+    print(other_mc[0][lowmassbin:highmassbin])
+    print('other mc 1')
+    print(other_mc[1][lowmassbin:highmassbin])
     print('poisson interval')
     print(qcd_data_int)
     print('qcd_data')
@@ -173,30 +196,179 @@ def getQCDFromData(
     print(qcd_data_altup)
     print('qcd_data_w2')
     print(qcd_data_w2)
+
     
-    qcd_temp_dn = np.minimum(
-        np.array(
-            [
-                qcd_data_int[0][bi]
-                if qcd_data_int[0][bi] >= 0.0 and not np.isnan(qcd_data_int[0][bi])
-                else 0.0
-                for bi in range(len(qcd_data))
-            ]
-        ),
-        qcd_data_altdn,
-    )
-    qcd_temp_up = np.maximum(
-        np.array(
-            [
-                qcd_data_int[1][bi]
-                if qcd_data_int[1][bi] >= 0.0 and not np.isnan(qcd_data_int[1][bi])
-                else 0.0
-                for bi in range(len(qcd_data))
-            ]
-        ),
-        qcd_data_altup,
-    )
+    if test: 
+        bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+        import matplotlib.pyplot as plt
+        bin_widths = np.diff(bins)
+        bin_centers = bins[:-1] + bin_widths / 2
+
+        # Plotting the histogram as a step plot
+        plt.figure(figsize=(12, 8))
+        plt.step(bin_centers, qcd_data_full, where='mid', label='data_full', linewidth=2)
+        plt.step(bin_centers, other_mc[0][lowmassbin:highmassbin], where='mid', label='other_mc[0]', linewidth=2)
+        plt.step(bin_centers, other_mc[1][lowmassbin:highmassbin], where='mid', label='other_mc[1]', linewidth=2)
+        plt.step(bin_centers, qcd_data, where='mid', label='qcd data', linestyle='-.', linewidth=2)
+        plt.step(bin_centers, qcd_data_w2, where='mid', label='qcd data w2', linestyle='-.', linewidth=2)
+        plt.step(bin_centers, qcd_data_int[0], where='mid', label='poisson interval dn', linestyle='--', linewidth=2)
+        plt.step(bin_centers, qcd_data_int[1], where='mid', label='poisson interval up', linestyle='--', linewidth=2)
+        
+        title = 'qcdcr_nom_fail'
+        plt.xlabel('Bin Range')
+        plt.ylabel('Counts')
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(f'plots/{title}_hist.jpg')
+    
+    # qcd_temp_dn = np.minimum(
+    #     np.array(
+    #         [
+    #             qcd_data_int[0][bi]
+    #             if qcd_data_int[0][bi] >= 0.0 and not np.isnan(qcd_data_int[0][bi])
+    #             else 0.0
+    #             for bi in range(len(qcd_data))
+    #         ]
+    #     ),
+    #     qcd_data_altdn,
+    # )
+    # qcd_temp_up = np.maximum(
+    #     np.array(
+    #         [
+    #             qcd_data_int[1][bi]
+    #             if qcd_data_int[1][bi] >= 0.0 and not np.isnan(qcd_data_int[1][bi])
+    #             else 0.0
+    #             for bi in range(len(qcd_data))
+    #         ]
+    #     ),
+    #     qcd_data_altup,
+    # )
+
+    qcd_temp_dn = np.array([
+        qcd_data_int[0][bi]
+        if qcd_data_int[0][bi] >= 0.0 and not np.isnan(qcd_data_int[0][bi])
+        else 0.0
+        for bi in range(len(qcd_data))
+        ])
+
+    qcd_temp_up = np.array([
+        qcd_data_int[1][bi]
+        if qcd_data_int[1][bi] >= 0.0 and not np.isnan(qcd_data_int[1][bi])
+        else 0.0
+        for bi in range(len(qcd_data))
+    ])
+
+
     return qcd_temp, qcd_temp_dn, qcd_temp_up
+
+def getQCDFromData(
+    inhist,
+    region,
+    nnCut,
+    nnCut_loose,
+    nnCut_fail,
+    default=0.0,
+    systematic="nominal",
+    mslice=None,
+    unc_scale=0.0,
+    lowmassbin=2,
+    highmassbin=-1,
+    test=False
+):
+    """
+    Get Data - other(MC) = QCD.
+    :param default: sets event content for bins with 0 events
+    :type default: float
+    :param unc_scale: can force the errors to be at least some percent (potentially useful for bins with a lot of events)
+    :type unc_scale: float
+    """
+
+    def clipZeros(data):
+        data = np.clip(data, default, None)
+        data[data == default] = 0.0
+        return data
+
+    # Integrate data_obs histogram over the specified region and cuts
+    data_obs_integrated = intRegion(
+        inhist["data_obs"],
+        region,
+        nnCut,
+        nnCut_loose,
+        nnCut_fail,
+        systematic=systematic,
+        mslice=mslice,
+    )
+    qcd_data_full = data_obs_integrated[0][lowmassbin:highmassbin]
+    qcd_data_full_w2 = data_obs_integrated[1][lowmassbin:highmassbin]
+
+    # Integrate all other MC samples except 'data_obs' and 'multijet'
+    other_mc_integrated = intRegion(
+        inhist,
+        region,
+        nnCut,
+        nnCut_loose,
+        nnCut_fail,
+        samplelist=[
+            s.name
+            for s in inhist.identifiers("sample")
+            if s.name != "data_obs" and s.name != "multijet"
+        ],
+        systematic=systematic,
+        mslice=mslice,
+    )
+    other_mc = other_mc_integrated[0][lowmassbin:highmassbin]
+    other_mc_w2 = other_mc_integrated[1][lowmassbin:highmassbin]
+
+    # Subtract other MC from data_obs and clip values to ensure no negative values
+    qcd_data = clipZeros(qcd_data_full - other_mc)
+    logging.debug(f"    Data - MC: %s" % qcd_data)
+
+    # Calculate the Poisson interval for the data
+    qcd_data_int = hist.poisson_interval(qcd_data_full, qcd_data_full_w2)
+    other_mc_int = hist.poisson_interval(other_mc, other_mc_w2)
+
+    # Calculate the up and down variations for data
+    qcd_data_up = qcd_data_int[1]
+    qcd_data_down = qcd_data_int[0]
+
+    # Calculate the up and down variations for QCD
+    qcd_temp_up = np.nan_to_num(clipZeros(qcd_data_up - other_mc_int[1]))
+    qcd_temp_dn = np.nan_to_num(clipZeros(qcd_data_down - other_mc_int[0]))
+
+
+    
+    if 1: 
+        bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+        # print(bins.shape)
+        # print(qcd_data_full.shape)
+        # print(qcd_data.shape)
+        # print(qcd_temp_dn.shape)
+        # print(qcd_temp_up.shape)
+        
+        import matplotlib.pyplot as plt
+        bin_widths = np.diff(bins)
+        bin_centers = bins[:-1] + bin_widths / 2
+        print(bin_centers.shape)
+        # Plotting the histogram as a step plot
+        plt.figure(figsize=(12, 8))
+        plt.step(bin_centers, qcd_data_full, where='mid', label='data_full', linewidth=2)
+        plt.step(bin_centers, other_mc, where='mid', label='other_mc', linewidth=2)
+        plt.step(bin_centers, qcd_data, where='mid', label='qcd data', linestyle='-.', linewidth=2)
+        plt.step(bin_centers, qcd_temp_up, where='mid', label='qcd temp up', linewidth=2)
+        plt.step(bin_centers, qcd_temp_dn, where='mid', label='qcd temp dn', linewidth=2)
+        
+        title = test
+        plt.xlabel('Bin Range')
+        plt.ylabel('Counts')
+        plt.title(title)
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(f'plots/{title}_hist.jpg')
+
+    return qcd_data, qcd_temp_dn, qcd_temp_up
+
+
 
 
 def getHist(

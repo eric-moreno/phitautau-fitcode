@@ -3,8 +3,62 @@ import logging
 import rhalphalib as rl
 from utils import intRegion, getQCDFromData
 from coffea import hist
+import matplotlib.pyplot as plt
 
 rl.ParametericSample.PreferRooParametricHist = True
+
+def plot_histogram(data, bins, title):
+    """
+    Plots a histogram.
+    
+    Parameters:
+    data (array): The counts in each bin.
+    bins (array): The edges of the bins.
+    title (str): The title for the histogram.
+    """
+    # Calculate the width of each bin for plotting
+    bin_widths = np.diff(bins)
+    bin_centers = bins[:-1] + bin_widths / 2
+
+    # Plotting the histogram
+    plt.figure(figsize=(10, 6))
+    plt.bar(bin_centers, data, width=bin_widths, align='center', alpha=0.7, color='b')
+    plt.xlabel('Bin Range')
+    plt.ylabel('Counts')
+    plt.title(title)
+    plt.grid(True)
+    plt.savefig(f'{title}_hist.jpg')
+
+def plot_overlayed_histograms(nom_counts, shift_dn_counts, shift_up_counts, bins, title):
+    """
+    Plots overlayed histograms for nominal, shift down, and shift up data.
+
+    Parameters:
+    nom_counts (array): Counts for the nominal histogram.
+    shift_dn_counts (array): Counts for the downward shifted histogram.
+    shift_up_counts (array): Counts for the upward shifted histogram.
+    bins (array): The edges of the bins.
+    title (str): The title for the plot.
+    """
+    # Calculate the width of each bin for plotting
+    bin_widths = np.diff(bins)
+    bin_centers = bins[:-1] + bin_widths / 2
+
+    # Plotting the histogram as a step plot
+    plt.figure(figsize=(12, 8))
+    plt.step(bin_centers, nom_counts, where='mid', label='Nominal', linewidth=2)
+    plt.step(bin_centers, shift_dn_counts, where='mid', label='Shift Down', linestyle='--', linewidth=2)
+    plt.step(bin_centers, shift_up_counts, where='mid', label='Shift Up', linestyle='-.', linewidth=2)
+
+    plt.xlabel('Bin Range')
+    plt.ylabel('Counts')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'plots/{title}_hist.jpg')
+
+# Example bin edges and counts
+bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
 
 
 class Cards:
@@ -78,6 +132,12 @@ class Cards:
             "hadmu": 0.9,
         }[cat]
 
+        self.nnCutFail = {
+            "hadhad": None,
+            "hadel": None,
+            "hadmu": None,
+        }[cat]
+        
         # group samples
         self.sample_groups = {
             "data_obs": ["data"],
@@ -163,14 +223,14 @@ class Cards:
             # https://github.com/drankincms/boostedhiggs/blob/c21f38fcec3b0df75a4327f2fd04139a840adbd5/boostedhiggs/httprocessor.py#L649
             self.invregions = {
                 "nom": {
-                    "sig": slices["lowtohighmet"],
-                    "top_cr": slices["lowtohighmet"],
+                    "sig": slices["highmet"],
+                    "top_cr": slices["highmet"],
                     "wlnu_cr": slices["lowmet"],
                     "qcd_cr": slices["lowmet"],
                 },
                 "fail": {
-                    "sig": slices["lowtohighmet"],
-                    "top_cr": slices["lowtohighmet"],
+                    "sig": slices["highmet"],
+                    "top_cr": slices["highmet"],
                     "wlnu_cr": slices["lowmet"],
                     "qcd_cr": slices["lowmet"],
                 },
@@ -355,7 +415,7 @@ class Cards:
             if self.mttbins_nom[ix] > self.highmass
         ]
         self.wlnu_highmass = [
-             rl.NuisanceParameter(f"wlnuhighmass_bin{ix}_{cat}", "shape")
+             rl.NuisanceParameter(f"wlnu_highmass_bin{ix}_{cat}", "shape")
              for ix in self.mttrange
              if self.mttbins_nom[ix] > self.highmass
          ]
@@ -367,27 +427,50 @@ class Cards:
         self.highmassx = highmassx
         
         # QCD shape
-        self.qcd_fail = rl.NuisanceParameter(f"qcd_Rfail_{cat}", "shape")
-        self.qcd_loosepass = rl.NuisanceParameter(f"qcd_Rloosepass_{cat}", "shape")
-        self.qcd_pass = rl.NuisanceParameter(f"qcd_Rpass_{cat}", "shape")
+        self.qcd_fail_1 = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}", "shape")
+        self.qcd_loosepass_1 = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}", "shape")
+        self.qcd_pass_1 = rl.NuisanceParameter(f"qcd_Rpass_method1_{cat}", "shape")
+
+        self.qcd_fail_2 = rl.NuisanceParameter(f"qcd_Rfail_method2_{cat}", "shape")
+        self.qcd_loosepass_2 = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}", "shape")
+        self.qcd_pass_2 = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}", "shape")
+
 
         # mass scale 
         self.m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
         self.m_scale_bkg = rl.NuisanceParameter(f"massscale_bkg_{cat}", "shape")
 
         # add uncertainty for low mass
-        self.qcd_lowmass = [
-            rl.NuisanceParameter(f"qcd_lowmass_bin{ix}_{cat}", "shape")
+        self.qcd_lowmass_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_method1_bin{ix}_{cat}", "shape")
             for ix in self.mttrange
             if self.mttbins_nom[ix] < self.lowqcdmass
         ]
-        self.qcd_lowmass_top = [
-            rl.NuisanceParameter(f"qcd_lowmass_top_bin{ix}_{cat}", "shape")
+
+        self.qcd_lowmass_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_method2_bin{ix}_{cat}", "shape")
             for ix in self.mttrange
             if self.mttbins_nom[ix] < self.lowqcdmass
         ]
-        self.qcd_lowmass_wlnu = [
-            rl.NuisanceParameter(f"qcd_lowmass_wlnu_bin{ix}_{cat}", "shape")
+
+        self.qcd_lowmass_top_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_top_method1_bin{ix}_{cat}", "shape")
+            for ix in self.mttrange
+            if self.mttbins_nom[ix] < self.lowqcdmass
+        ]
+        self.qcd_lowmass_top_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_top_method2_bin{ix}_{cat}", "shape")
+            for ix in self.mttrange
+            if self.mttbins_nom[ix] < self.lowqcdmass
+        ]
+
+        self.qcd_lowmass_wlnu_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_wlnu_method1_bin{ix}_{cat}", "shape")
+            for ix in self.mttrange
+            if self.mttbins_nom[ix] < self.lowqcdmass
+        ]
+        self.qcd_lowmass_wlnu_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_wlnu_method2_bin{ix}_{cat}", "shape")
             for ix in self.mttrange
             if self.mttbins_nom[ix] < self.lowqcdmass
         ]
@@ -396,7 +479,7 @@ class Cards:
         # self.qcd_lowmass_top = rl.NuisanceParameter(f"qcd_lowmass_top_bin_{cat}", "shape")
         # self.qcd_lowmass_wlnu = rl.NuisanceParameter(f"qcd_lowmass_wlnu_bin_{cat}", "shape")
         
-    def get_qcd(self, hists: dict, region: str, default: float = 0.0):
+    def get_qcd(self, hists: dict, region: str, default: float = 0.0, test=False):
         """
         Get QCD estimate by subtracting other_MC from data.
 
@@ -408,7 +491,7 @@ class Cards:
         :type default: float
         """
         return getQCDFromData(
-            hists, region, self.nnCut, self.nnCutLoose, default=default
+            hists, region, self.nnCut, self.nnCutLoose, self.nnCutFail, default=default, test=test
         )
 
     def _get_region(
@@ -422,6 +505,7 @@ class Cards:
             region,
             self.nnCut,
             self.nnCutLoose,
+            self.nnCutFail,
             systematic=syst,
             debug=debug,
         )
@@ -465,7 +549,7 @@ class Cards:
         )
         return template, events
 
-    def systs_mass(self, h, region, sample, sample_template, singlebin=False):
+    def systs_mass(self, h, region, sample, sample_template, singlebin=False, analysis_region=None):
         """
         Add mass systematics
         """
@@ -485,35 +569,49 @@ class Cards:
                 self.lowbin + 1 : self.highbin + 1 if self.highbin != -1 else None
             ]
             shiftwidth = self.mttbins[1] - self.mttbins[0]
+            bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+            #plot_histogram(nom, bins, f'{sample.name}_NominalHistogram')
+            #plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogram')
+            #plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogram')
+            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{sample.name}_OverlayedHistograms')
 
-            dnfrac = np.array(
-                [
-                    shiftwidth
-                    / (
-                        self.mttbins[self.lowbin + ib]
-                        - self.mttbins[self.lowbin + ib - 1]
-                    )
-                    for ib in range(len(nom))
-                ]
-            )
-            shift_dn = shift_dn * dnfrac + nom * (1.0 - dnfrac)
+            # dnfrac = np.array(
+            #     [
+            #         shiftwidth
+            #         / (
+            #             self.mttbins[self.lowbin + ib]
+            #             - self.mttbins[self.lowbin + ib - 1]
+            #         )
+            #         for ib in range(len(nom))
+            #     ]
+            # )
+            # shift_dn = shift_dn * dnfrac + nom * (1.0 - dnfrac)
 
-            upfrac = np.array(
-                [
-                    shiftwidth
-                    / (
-                        self.mttbins[self.lowbin + ib + 2]
-                        - self.mttbins[self.lowbin + ib + 1]
-                    )
-                    for ib in range(len(nom))
-                ]
-            )
-            shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
-            
+            # upfrac = np.array(
+            #     [
+            #         shiftwidth
+            #         / (
+            #             self.mttbins[self.lowbin + ib + 2]
+            #             - self.mttbins[self.lowbin + ib + 1]
+            #         )
+            #         for ib in range(len(nom))
+            #     ]
+            # )
+            # shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
+            shiftfrac = np.array([shiftwidth/(self.mttbins[self.lowbin+ib+1]-self.mttbins[self.lowbin+ib]) for ib in range(len(nom_full[self.lowbin:self.highbin]))]) # this accounts for variable bin widths
+            shiftfrac_dn = np.insert(shiftfrac, 0, shiftfrac[0])[:-1]
+            shiftfrac_up = np.append(shiftfrac, shiftfrac[-1])[1:]
+            shift_dn = shift_dn*shiftfrac_dn + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_dn)
+            shift_up = shift_up*shiftfrac_up + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_up)
+            #plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogramAfterMultiplication')
+            #plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogramAfterMultiplication')
+
+            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
+
             syst_template.setParamEffect(
                 self.m_scale,
-                np.divide(shift_dn, nom, out=np.ones_like(nom), where=nom > 0.0),
-                np.divide(shift_up, nom, out=np.ones_like(nom), where=nom > 0.0),
+                np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+                np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
             )
         
         if (
@@ -530,34 +628,45 @@ class Cards:
             ]
             shiftwidth = self.mttbins[1] - self.mttbins[0]
 
-            dnfrac = np.array(
-                [
-                    shiftwidth
-                    / (
-                        self.mttbins[self.lowbin + ib]
-                        - self.mttbins[self.lowbin + ib - 1]
-                    )
-                    for ib in range(len(nom))
-                ]
-            )
-            shift_dn = shift_dn * dnfrac + nom * (1.0 - dnfrac)
 
-            upfrac = np.array(
-                [
-                    shiftwidth
-                    / (
-                        self.mttbins[self.lowbin + ib + 2]
-                        - self.mttbins[self.lowbin + ib + 1]
-                    )
-                    for ib in range(len(nom))
-                ]
-            )
-            shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
-            
+            bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{cat}_{region}_{sample.name}_OverlayedHistograms')
+
+            # dnfrac = np.array(
+            #     [
+            #         shiftwidth
+            #         / (
+            #             self.mttbins[self.lowbin + ib]
+            #             - self.mttbins[self.lowbin + ib - 1]
+            #         )
+            #         for ib in range(len(nom))
+            #     ]
+            # )
+            # shift_dn = shift_dn * dnfrac + nom * (1.0 - dnfrac)
+
+            # upfrac = np.array(
+            #     [
+            #         shiftwidth
+            #         / (
+            #             self.mttbins[self.lowbin + ib + 2]
+            #             - self.mttbins[self.lowbin + ib + 1]
+            #         )
+            #         for ib in range(len(nom))
+            #     ]
+            # )
+            # shift_up = shift_up * upfrac + nom * (1.0 - upfrac)
+            shiftfrac = np.array([shiftwidth/(self.mttbins[self.lowbin+ib+1]-self.mttbins[self.lowbin+ib]) for ib in range(len(nom_full[self.lowbin:self.highbin]))]) # this accounts for variable bin widths
+            shiftfrac_dn = np.insert(shiftfrac, 0, shiftfrac[0])[:-1]
+            shiftfrac_up = np.append(shiftfrac, shiftfrac[-1])[1:]
+            shift_dn = shift_dn*shiftfrac_dn + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_dn)
+            shift_up = shift_up*shiftfrac_up + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_up)
+
+            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
+
             syst_template.setParamEffect(
                 self.m_scale_bkg,
-                np.divide(shift_dn, nom, out=np.ones_like(nom), where=nom > 0.0),
-                np.divide(shift_up, nom, out=np.ones_like(nom), where=nom > 0.0),
+                np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+                np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
             )
         
         return syst_template
@@ -622,7 +731,7 @@ class Cards:
         #print('syst template')
         return syst_template
 
-    def systs_norm(self, region, events, qcd, sample, sample_template, singlebin=False):
+    def systs_norm(self, region, events, qcd, sample, sample_template, singlebin=False, analysis_region=None):
         """
         Add systematics for normalization
         """
@@ -655,7 +764,7 @@ class Cards:
                             ]
                         ),
                     )
-
+                
         if sample.name == "wlnu":
             syst_template.setParamEffect(
                 self.syst_dict["CMS_wlnu_norm"], 1.10
@@ -731,44 +840,163 @@ class Cards:
             for il, lumi in enumerate(lumi_list):
                 syst_template.setParamEffect(self.syst_dict[lumi], lumi_vals[il])
 
-        else:
-            if not singlebin:
-                qcd_shape_dn = np.divide(
+            print(sample.name)
+            if sample.name == "top" or sample.name == "wlnu":
+                qcd_shape_dn_1 = np.divide(
                     qcd["dn"],
                     qcd["nom"],
                     out=np.ones_like(qcd["nom"]),
                     where=qcd["nom"] > 0.0,
                 )
-                qcd_shape_up = np.divide(
+                qcd_shape_up_1 = np.divide(
                     qcd["up"],
                     qcd["nom"],
                     out=np.ones_like(qcd["nom"]),
                     where=qcd["nom"] > 0.0,
                 )
-                qcd_nuisance = {
-                    "pass": self.qcd_pass,
-                    "loosepass": self.qcd_loosepass,
-                    "fail": self.qcd_fail,
-                }[region]
-                syst_template.setParamEffect(
-                    qcd_nuisance,
-                    np.minimum(qcd_shape_dn, qcd_shape_up),
-                    np.maximum(qcd_shape_dn, qcd_shape_up),
+
+                qcd_shape_dn_2 = np.divide(
+                    qcd["dn2"],
+                    qcd["nom"],
+                    out=np.ones_like(qcd["nom"]),
+                    where=qcd["nom"] > 0.0,
                 )
-                for imx in range(len(self.qcd_lowmass_wlnu)):
-                    syst_template.setParamEffect(self.qcd_lowmass_top[imx],
-                                         np.array([qcd_shape_dn[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                         np.array([qcd_shape_up[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
-                    
-                    syst_template.setParamEffect(self.qcd_lowmass_wlnu[imx],
-                                         np.array([qcd_shape_dn[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                         np.array([qcd_shape_up[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                qcd_shape_up_2 = np.divide(
+                    qcd["up2"],
+                    qcd["nom"],
+                    out=np.ones_like(qcd["nom"]),
+                    where=qcd["nom"] > 0.0,
+                )
+                # print("QCD")
+                # print(qcd["nom"])
+                # print(qcd["up"])
+                # print(qcd["up2"])
+                #plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
+                #plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
+
+                if sample.name == 'top':
+                    print(sample.name)
+                    print('TOP')
+                    for imx in range(len(self.qcd_lowmass_top_1)):
+                        syst_template.setParamEffect(self.qcd_lowmass_top_1[imx],
+                                            np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                            np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                    for imx in range(len(self.qcd_lowmass_top_2)):
+                        syst_template.setParamEffect(self.qcd_lowmass_top_2[imx],
+                                            np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                            np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+            
+                elif sample.name == 'wlnu':
+                    print('WLNU')
+                    for imx in range(len(self.qcd_lowmass_wlnu_1)):
+                        syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[imx],
+                                                np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                    for imx in range(len(self.qcd_lowmass_wlnu_2)):
+                        syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
+                                                np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+
                 
+
+
+        else:
+            if not singlebin:
+                qcd_shape_dn_1 = np.divide(
+                    qcd["dn"],
+                    qcd["nom"],
+                    out=np.ones_like(qcd["nom"]),
+                    where=qcd["nom"] > 0.0,
+                )
+                qcd_shape_up_1 = np.divide(
+                    qcd["up"],
+                    qcd["nom"],
+                    out=np.ones_like(qcd["nom"]),
+                    where=qcd["nom"] > 0.0,
+                )
+
+                #plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
+                #plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
+
+                if "dn2" in qcd.keys():
+                    qcd_shape_dn_2 = np.divide(
+                        qcd["dn2"],
+                        qcd["nom"],
+                        out=np.ones_like(qcd["nom"]),
+                        where=qcd["nom"] > 0.0,
+                    )
+                if "up2" in qcd.keys():
+                    qcd_shape_up_2 = np.divide(
+                        qcd["up2"],
+                        qcd["nom"],
+                        out=np.ones_like(qcd["nom"]),
+                        where=qcd["nom"] > 0.0,
+                    )
+
+                qcd_nuisance_1 = {
+                    "pass": self.qcd_pass_1,
+                    "loosepass": self.qcd_loosepass_1,
+                    "fail": self.qcd_fail_1,
+                }[region]
+
+                qcd_nuisance_2 = {
+                    "pass": self.qcd_pass_2,
+                    "loosepass": self.qcd_loosepass_2,
+                    "fail": self.qcd_fail_2,
+                }[region]
+
+                # syst_template.setParamEffect(
+                #     qcd_nuisance_1,
+                #     np.minimum(qcd_shape_dn_1, qcd_shape_up_1),
+                #     np.maximum(qcd_shape_dn_1, qcd_shape_up_1),
+                # )
+
+                # syst_template.setParamEffect(
+                #     qcd_nuisance_2,
+                #     np.minimum(qcd_shape_dn_2, qcd_shape_up_2),
+                #     np.maximum(qcd_shape_dn_2, qcd_shape_up_2),
+                # )
+                
+                syst_template.setParamEffect(
+                    qcd_nuisance_1,
+                    qcd_shape_dn_1,
+                    qcd_shape_up_1,
+                )
+
+                syst_template.setParamEffect(
+                    qcd_nuisance_2,
+                    qcd_shape_dn_2,
+                    qcd_shape_up_2,
+                )
+        
+                # for imx in range(len(self.qcd_lowmass_top)):
+                #     syst_template.setParamEffect(self.qcd_lowmass_top[imx],
+                #                         np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                #                         np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+            
+
+                # for imx in range(len(self.qcd_lowmass_wlnu)):
+                #     syst_template.setParamEffect(self.qcd_lowmass_wlnu[imx],
+                #                             np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                #                             np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                
+                for imx in range(len(self.qcd_lowmass_1)):
+                    syst_template.setParamEffect(self.qcd_lowmass_1[imx],
+                                            np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                            np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                
+                # print(qcd_shape_dn_1)
+                # print(qcd_shape_up_1)
+                # print(qcd_shape_dn_2)
+                # print(qcd_shape_up_2)
+                for imx in range(len(self.qcd_lowmass_2)):
+                    syst_template.setParamEffect(self.qcd_lowmass_2[imx],
+                                            np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                            np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+
                 # syst_template.setParamEffect(self.qcd_lowmass_top, qcd_shape_dn, qcd_shape_up)
                     
                 # syst_template.setParamEffect(self.qcd_lowmass_wlnu, qcd_shape_dn, qcd_shape_up)
-                
-
 
         return syst_template
 
@@ -804,6 +1032,7 @@ class Cards:
             logging.debug(
                 f"Building template for sample {sample} and region {region} and analysis_region {analysis_region}, singlebin {singlebin}"
             )
+            print(f"Building template for sample {sample} and region {region} and analysis_region {analysis_region}, singlebin {singlebin}")
             # get template from that MC/data sample
             h = hchannel[sample]
             template, events = self.get_template(
@@ -817,13 +1046,14 @@ class Cards:
                     if singlebin
                     else np.clip(qcd["nom"], 0.0, None)
                 )
+    
                 template = (
                     clip,
                     self.mttone.binning if singlebin else self.mtt.binning,
                     self.mttone.name if singlebin else self.mtt.name,
-                    np.array([1000000.0])
+                    np.array([template[-1]])
                     if singlebin
-                    else np.ones_like(qcd["nom"]) * 1000000.0,
+                    else template[-1], 
                 )
 
             if sample.name == "data_obs":
@@ -840,9 +1070,9 @@ class Cards:
                     template,
                 )
 
-
+            
                 # MAYBE add in automcstats soon? 
-                #sample_template.autoMCStats(epsilon=1e-4)
+                #sample_template.autoMCStats(epsilon=1e-4, lnN=True)
 
 
                 # shape systematics
@@ -851,11 +1081,11 @@ class Cards:
                 )
                 # mass systematics - skipping for now
                 sample_template = self.systs_mass(
-                    h, region, sample, sample_template, singlebin
+                    h, region, sample, sample_template, singlebin, analysis_region
                 )
                 # norm systematics
                 sample_template = self.systs_norm(
-                    region, events, qcd, sample, sample_template, singlebin
+                    region, events, qcd, sample, sample_template, singlebin, analysis_region
                 )
                 # QCD norm SF
                 if sample.name == "multijet" and qcdnormSF is not None:
@@ -875,7 +1105,8 @@ class Cards:
                     self.mttone.name if singlebin else self.mtt.name,
                 )
             )
-
+            
+        ch.autoMCStats(epsilon=1e-4, threshold=1)
         # add channel
         self.model.addChannel(ch)
         

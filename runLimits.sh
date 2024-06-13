@@ -12,15 +12,20 @@ fi
 
 fullstr=""
 #masslist=(10 20 30 40 50 75 100 125 150 200 250 300)
-masslist=(30 40 50 75 100 125 150 200)
-#masslist=(30 50 100 125 150 200)
+#masslist=(30 40 50 75 100 125 150 200)
+masslist=(50)
+#masslist=(30 200)
 #masslist=(125)
-addargs='"-t -1 --toysFrequentist"'
+addargs='""'
+#addargs='""'
 nopass=""
 mode="AsymptoticLimits"
 expsig=0
 if [[ "$2" == "full" ]]; then
+  #addargs='" --freezeParameters rgx{.*multijet_mcstat.*}"'
   fullstr=" --full"
+  #addargs='"-t -1 --freezeParameters allConstrainedNuisances"'
+  #addargs='"-t -1"'
 elif [[ "$2" == "full200" ]]; then
   fullstr=" --full"
   masslist=(200)
@@ -62,6 +67,7 @@ OUTPUT=($1)
 for MODEL in ${modellist[@]}; do
   echo ${MODEL}
   for MASS in ${masslist[@]}; do
+    echo ${MASS}
     cd ${OUTPUT[-1]}/${MODEL}_m${MASS}/
     source build.sh >& out.log
     if [[ "${mode}" == "Significance" ]]; then
