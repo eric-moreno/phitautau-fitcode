@@ -345,7 +345,13 @@ class Cards:
         else:
             syst_dict_prefire = {}
         #syst_dict_prefire = {}
-        
+
+
+        syst_dict_top = {"toppt": [
+            rl.NuisanceParameter("toppt", "shape"),
+           "nominal",
+           "TopPtReweightUp",]
+        }
         # add prefire uncertainty
         # if self.year not in ["2018"]:
         #     for sample in syst_dict:
@@ -354,10 +360,10 @@ class Cards:
         #             "L1PreFiringDown",
         #             "L1PreFiringUp",
         #         ]
-
+        
         syst_dict_cat = syst_dict 
         syst_dict_UPDOWN = syst_dict_JER | syst_dict_prefire 
-        syst_dict = syst_dict_norm | lumi_list 
+        syst_dict = syst_dict_norm | lumi_list | syst_dict_top
         # syst_dict["top"] = [
         #    rl.NuisanceParameter("toppt", "shape"),
         #    "nominal",
@@ -365,11 +371,11 @@ class Cards:
         # ]
         # add toppt uncertainty for top region
         
-        #syst_dict["top"]["toppt"] = [
-        #      rl.NuisanceParameter("toppt", "shape"),
-        #      "nominal",
-        #      "TopPtReweightUp",
-        #  ]
+        # syst_dict["top"]["toppt"] = [
+        #       rl.NuisanceParameter("toppt", "shape"),
+        #       "nominal",
+        #       "TopPtReweightUp",
+        # ]
 
         #print(syst_dict)
         #print(syst_dict.keys())
@@ -393,7 +399,7 @@ class Cards:
 
         # Bkg efficiency
         self.bkgeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 10)
-        self.bkgLeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 10)
+        self.bkgLeffSF = rl.IndependentParameter(f"bkgLeffSF_{cat}", 1.0, 0, 10)
 
         # Top efficiency
         self.topeffSF = rl.IndependentParameter(f"topeffSF_{cat}", 1.0, 0, 10)
@@ -669,6 +675,9 @@ class Cards:
                 np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
             )
         
+
+
+
         return syst_template
 
     def systs_shape(self, h, region, sample, sample_template, singlebin=False):
@@ -708,7 +717,8 @@ class Cards:
                 )
 
             if sample.name == "top":
-                nuisance, syst_dn, syst_up = rl.NuisanceParameter("toppt", "shape"), "nominal", "TopPtReweightUp"
+                #nuisance, syst_dn, syst_up = rl.NuisanceParameter("toppt", "shape"), "nominal", "TopPtReweightUp"
+                nuisance, syst_dn, syst_up = self.syst_dict["toppt"]
 
                 up = self._events(self._get_region(h, region, syst_up), clip=False)
                 dn = self._events(self._get_region(h, region, syst_dn))
@@ -1018,6 +1028,18 @@ class Cards:
         ch = rl.Channel(f"{analysis_region_str}{region}{cat}{self.year}")
 
         vals = {}
+
+        def smass(sName):
+            if 'h125' in sName or 'htt125' in sName:
+                _mass = 125.
+            elif sName in ['wjets', 'vv', 'vqq', 'wlnu']:
+                _mass = 80.379
+            elif sName in ['ztt', 'zem', 'dy']:
+                _mass = 91.
+            else:
+                raise ValueError("DAFUQ is {}".format(sName))
+            return _mass
+
         for sample in hchannel.identifiers("sample"):
             if sample.name == "ignore":
                 continue
@@ -1062,6 +1084,20 @@ class Cards:
                 ch.setObservation(template[:-1])
                 #ch.setObservation(template, read_sumw2=True)
             else:
+                
+                MORPHNOMINAL = True
+                def smorph(templ, sName):
+                    if templ is None:
+                        return None
+                    if MORPHNOMINAL and sName not in ['qcd']: #what do here
+                        return MorphHistW2(templ).get(shift=SF[year]['shift_SF']/smass('wcq') * smass(sName),
+                                                      smear=SF[year]['smear_SF']
+                                                      )
+                    else:
+                        return templ
+                #template = smorph(template, sample.name)
+
+
                 sample_template = rl.TemplateSample(
                     f"{ch.name}_{sample.name}",
                     rl.Sample.SIGNAL
@@ -1118,6 +1154,8 @@ class Cards:
 
         # top normalization
         # QUESTION: shouldn't this be loose/pass?
+        unifiedBkgEff_flag = True
+
         topLPF = (
             self.model[str_pass]["top"].getExpectation(nominal=True).sum()
             / self.model[str_loose]["top"].getExpectation(nominal=True).sum()
@@ -1127,27 +1165,31 @@ class Cards:
             + self.model[str_pass]["top"].getExpectation(nominal=True).sum()
         ) / self.model[str_fail]["top"].getExpectation(nominal=True).sum()
 
-        # self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
-        # self.model[str_loose]["top"].setParamEffect(
-        #     self.topLeffSF, (1 - self.topLeffSF) * topLPF + 1
-        # )
+        if unifiedBkgEff_flag: 
 
-        self.model[str_pass]["top"].setParamEffect(self.bkgLeffSF, 1 * self.bkgLeffSF)
-        self.model[str_loose]["top"].setParamEffect(
-            self.bkgLeffSF, (1 - self.bkgLeffSF) * topLPF + 1
-        )
+            self.model[str_pass]["top"].setParamEffect(self.bkgLeffSF, 1 * self.bkgLeffSF)
+            self.model[str_loose]["top"].setParamEffect(
+                self.bkgLeffSF, (1 - self.bkgLeffSF) * topLPF + 1
+            )
 
-        # self.model[str_loose]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
-        # self.model[str_pass]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
-        # self.model[str_fail]["top"].setParamEffect(
-        #     self.topeffSF, (1 - self.topeffSF) * topPF + 1
-        # )
 
-        self.model[str_loose]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
-        self.model[str_pass]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
-        self.model[str_fail]["top"].setParamEffect(
-            self.bkgeffSF, (1 - self.bkgeffSF) * topPF + 1
-        )
+            self.model[str_loose]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+            self.model[str_pass]["top"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+            self.model[str_fail]["top"].setParamEffect(
+                self.bkgeffSF, (1 - self.bkgeffSF) * topPF + 1
+            )
+
+        else: 
+            self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
+            self.model[str_loose]["top"].setParamEffect(
+                self.topLeffSF, (1 - self.topLeffSF) * topLPF + 1
+            )
+
+            self.model[str_loose]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
+            self.model[str_pass]["top"].setParamEffect(self.topeffSF, 1 * self.topeffSF)
+            self.model[str_fail]["top"].setParamEffect(
+                self.topeffSF, (1 - self.topeffSF) * topPF + 1
+            )
 
         # wlnu normalization
         wlnuPF = (
@@ -1161,32 +1203,33 @@ class Cards:
         # pass/(loose + pass)
         wlnuRLPF = 1.0 / (1.0 + (1.0 / wlnuLPF))
 
-        # self.model[str_pass]["wlnu"].setParamEffect(
-        #     self.wlnuLeffSF, 1 * self.wlnuLeffSF
-        # )
-        # self.model[str_loose]["wlnu"].setParamEffect(
-        #     self.wlnuLeffSF, (1 - self.wlnuLeffSF) * wlnuLPF + 1
-        # )
-
-        self.model[str_pass]["wlnu"].setParamEffect(
+        if unifiedBkgEff_flag: 
+            self.model[str_pass]["wlnu"].setParamEffect(
             self.bkgLeffSF, 1 * self.bkgLeffSF
-        )
-        self.model[str_loose]["wlnu"].setParamEffect(
-            self.bkgLeffSF, (1 - self.bkgLeffSF) * wlnuLPF + 1
-        )
+            )
+            self.model[str_loose]["wlnu"].setParamEffect(
+                self.bkgLeffSF, (1 - self.bkgLeffSF) * wlnuLPF + 1
+            )
+            self.model[str_loose]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+            self.model[str_pass]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
+            self.model[str_fail]["wlnu"].setParamEffect(
+                self.bkgeffSF, (1 - self.bkgeffSF) * wlnuPF + 1
+            )
 
-        # self.model[str_loose]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
-        # self.model[str_pass]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
-        # self.model[str_fail]["wlnu"].setParamEffect(
-        #     self.wlnueffSF, (1 - self.wlnueffSF) * wlnuPF + 1
-        # )
+        else:
 
+            self.model[str_pass]["wlnu"].setParamEffect(
+            self.wlnuLeffSF, 1 * self.wlnuLeffSF
+            )
+            self.model[str_loose]["wlnu"].setParamEffect(
+                self.wlnuLeffSF, (1 - self.wlnuLeffSF) * wlnuLPF + 1
+            )
 
-        self.model[str_loose]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
-        self.model[str_pass]["wlnu"].setParamEffect(self.bkgeffSF, 1 * self.bkgeffSF)
-        self.model[str_fail]["wlnu"].setParamEffect(
-            self.bkgeffSF, (1 - self.bkgeffSF) * wlnuPF + 1
-        )
+            self.model[str_loose]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
+            self.model[str_pass]["wlnu"].setParamEffect(self.wlnueffSF, 1 * self.wlnueffSF)
+            self.model[str_fail]["wlnu"].setParamEffect(
+                self.wlnueffSF, (1 - self.wlnueffSF) * wlnuPF + 1
+            )
 
         # dy normalization
         dyLP = (
