@@ -3,7 +3,6 @@ import numpy as np
 import logging
 from coffea import hist
 
-
 def intRegion(
     inhist: hist.Hist,
     theregion: str,
@@ -13,7 +12,7 @@ def intRegion(
     systematic: str = "nominal",
     samplelist: list = None,
     mslice: slice = None,
-    mrebin: int = None,
+    mrebin: bool = False,
     debug: bool = False,
 ):
     """
@@ -36,6 +35,7 @@ def intRegion(
     the_int = inhist.integrate("nn_disc", theslice, overflow_str).integrate(
         "systematic", systematic
     )
+    print('THE INT', the_int)
     if debug:
         print("nn slice ", theslice, "nn ", nnCut, " l ", nnCut_loose)
         print("overflow ", overflow_str, the_int.values())
@@ -45,8 +45,19 @@ def intRegion(
     )
 
     # rebin in mass
-    if mrebin is not None:
-        the_int = the_int.rebin("massreg", hist.Bin("massreg", "massreg", mrebin))
+    # if mrebin:
+    #     original_bins = inhist.axis("massreg").edges()
+    #     print(original_bins)
+    #     print(inhist.axis("massreg").edges())
+    #     # Define the new bin edges
+    #     new_bin_edges = np.concatenate(([original_bins[0]], [original_bins[2]], [original_bins[4]], original_bins[6:]))
+    #     print(new_bin_edges)
+    #     # Perform rebinning
+    #     the_int = the_int.rebin("massreg", hist.Bin("massreg", "massreg", new_bin_edges))
+    print(the_int)
+        #the_int = the_int.rebin("massreg", hist.Bin("massreg", "massreg", mrebin))
+    # if mrebin:
+    #     the_int = custom_rebin(the_int, "massreg")
 
     # slice on mass
     if mslice is not None:
@@ -60,11 +71,11 @@ def intRegion(
             overflow_str = "allnan"
         the_int = the_int.integrate("massreg", mslice, overflow_str)
         if debug:
-            print("mass ", overflow_str, the_int.values())
+            print("massreg", overflow_str, the_int.values())
         logging.debug(
             f"Values: {the_int.values()} with mass slices and overflow {overflow_str}"
         )
-
+    print(the_int)
     # slice or sum samples
     if samplelist is not None:
         the_int = the_int.integrate("sample", samplelist).values(sumw2=True)[()]
@@ -74,10 +85,9 @@ def intRegion(
             the_int = the_int[()]
         else:
             the_int = np.zeros(len(mttbins) - 1, dtype=np.float32)
-
+    print(the_int)
     if debug:
         print("debug", the_int)
-
     logging.debug(f"After integrating: {the_int}")
     return the_int
 
@@ -274,7 +284,8 @@ def getQCDFromData(
     unc_scale=0.0,
     lowmassbin=2,
     highmassbin=-1,
-    test=False
+    test=False,
+    mrebin=False
 ):
     """
     Get Data - other(MC) = QCD.
@@ -298,6 +309,7 @@ def getQCDFromData(
         nnCut_fail,
         systematic=systematic,
         mslice=mslice,
+        mrebin=mrebin
     )
     qcd_data_full = data_obs_integrated[0][lowmassbin:highmassbin]
     qcd_data_full_w2 = data_obs_integrated[1][lowmassbin:highmassbin]
@@ -316,6 +328,7 @@ def getQCDFromData(
         ],
         systematic=systematic,
         mslice=mslice,
+        mrebin=mrebin
     )
     other_mc = other_mc_integrated[0][lowmassbin:highmassbin]
     other_mc_w2 = other_mc_integrated[1][lowmassbin:highmassbin]
@@ -367,8 +380,6 @@ def getQCDFromData(
         plt.savefig(f'plots/{title}_hist.jpg')
 
     return qcd_data, qcd_temp_dn, qcd_temp_up
-
-
 
 
 def getHist(

@@ -42,19 +42,19 @@ def getQCDShape(c, hists):
         for invregion in c.invregions:
             for category in c.nnregions:
                 
-                print('region: ', region)
-                print('invregion: ', invregion)
-                print('category: ', category)
-                #print(data_hist)
+                # print('region: ', region)
+                # print('invregion: ', invregion)
+                # print('category: ', category)
+                # print(data_hist)
 
                 
                 data_hist = c.get_qcd(
                     hists[region][invregion],
-                    category, test=f"{region}_{invregion}_{category}"
+                    category, test=f"{region}_{invregion}_{category}_QCD_"
                 )
                 
-                print('data hist')
-                print(data_hist)
+                # print('data hist')
+                # print(data_hist)
 
                 hists_qcd[region][invregion][category] = data_hist
     return hists_qcd
@@ -294,25 +294,25 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
     #print(hists_qcd)
     # get ratio to fail region (["noqcdcr_fail","qcdcr_nom","qcdcr_fail"])
     ratio_F = getRatioFail(c, hists_qcd)
-    print("RATIO FAIL")
-    print(cat)
-    print("RATIO FAIL")
-    print(cat)
-    print("RATIO FAIL")
-    print(cat)
-    print("RATIO FAIL")
-    print(ratio_F)
+    # print("RATIO FAIL")
+    # print(cat)
+    # print("RATIO FAIL")
+    # print(cat)
+    # print("RATIO FAIL")
+    # print(cat)
+    # print("RATIO FAIL")
+    # print(ratio_F)
     # get QCD ratio (["sig_to_qcd", "nom_to_fail"])
     qcd_ratio = getQCDRatio(c, hists_qcd)
     qcd_ratio_hadhad = getQCDRatiohadhad(c, hists_qcd)
-    print('QCD RATIO')
-    print(cat)
-    print('QCD RATIO')
-    print(cat)
-    print('QCD RATIO')
-    print(cat)
-    print('QCD RATIO')
-    print(qcd_ratio)
+    # print('QCD RATIO')
+    # print(cat)
+    # print('QCD RATIO')
+    # print(cat)
+    # print('QCD RATIO')
+    # print(cat)
+    # print('QCD RATIO')
+    # print(qcd_ratio)
 
     
     def build_qcdpred(region, islephad):
@@ -471,11 +471,11 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
         qcd_pred = collections.defaultdict(dict)
         for key in qcdpred[1].keys():
             qcd_method = method_to_use[key]
-            print(key)
+            #print(key)
             for var, qid in qcd_index.items():
-                print(var)
-                print(qid)
-                print(key)
+                #print(var)
+                #print(qid)
+                #print(key)
                 if qcd_method == 3:
                     shape_, ratio_ = qcdpred[1][key]
                     method1 = shape_[qid] * ratio_[var] 
@@ -490,7 +490,7 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                     # print(ratio_)
                     # print(shape_)
                               
-                    print(method2)
+                    #print(method2)
                     if var == "nom":
                         qcd_pred[key][var] = methodc
                     elif var == "dn":
@@ -534,20 +534,36 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
     for region in c.nnregions:
         # singlebin: integrate prediction over mass bins
         if c.islephad:
-            singlebinCR = False
+            singlebinCR = True
             singlebinFail = False
         else:
             singlebinCR = False
-            singlebinFail = False
+            singlebinFail = True
         singlebin = singlebinFail and region == "fail"
         singlebinCR = singlebinCR or singlebin
+        
+        # hadlep 
+        # singlebin = True
+        # singlebinCR = False
+        # hadhad
+        # singlebin = True (only in fail), False else
+        # singlebinCR = True (only in fail), False else
+        
+        if c.islephad:
+            rebinCR = False
+            rebinFail = False
+        else:
+            rebinCR = False
+            rebinFail = False
+        rebin = rebinFail and region == "fail"
+        rebinCR = rebinCR or rebin
 
         # build qcd prediction
         logger.info(f"Building {region}-qcd predictions")
         qcdpred = build_qcdpred(region, c.islephad)
 
-        #print("Signal regions singlebin: " + str(singlebin))
-        #print("Control regions singlebin: " + str(singlebinCR))
+        print("Signal regions singlebin: " + str(singlebin))
+        print("Control regions singlebin: " + str(singlebinCR))
 
         # add signal region
         logger.info(f"Building {region}-signal region")
@@ -558,6 +574,7 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
             qcdpred["sig"],
             unblind,
             singlebin=singlebin,
+            rebin = rebin,
             debug=False,
         )
 
@@ -577,6 +594,7 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
             hists["top_cr"]["nom"],
             qcdpred["top_cr"],
             singlebin=singlebinCR,
+            rebin=rebinCR
         )
         
 
@@ -588,6 +606,7 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
             hists["wlnu_cr"]["nom"],
             qcdpred["wlnu_cr"],
             singlebin=singlebinCR,
+            rebin=rebinCR
         )
 
         print("Signal regions singlebin: " + str(singlebin))

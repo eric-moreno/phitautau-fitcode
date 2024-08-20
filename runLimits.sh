@@ -7,25 +7,25 @@ elif [[ -n "$4" ]]; then
 elif [[ -n "$3" ]]; then
   modellist=(${3}Model)
 else
-  modellist=(hadhadModel hadmuModel hadelModel fullModel)
+  modellist=(fullModel hadelModel hadhadModel hadmuModel)
 fi
 
 fullstr=""
 #masslist=(10 20 30 40 50 75 100 125 150 200 250 300)
-#masslist=(30 40 50 75 100 125 150 200)
-masslist=(50)
+#masslist=(30 40 50 75 100 125 150 200 250 300)
+masslist=(50 125 200)
 #masslist=(30 200)
 #masslist=(125)
-addargs='""'
+#addargs='"--toysFreq"'
 #addargs='""'
-nopass=""
+#nopass=""
 mode="AsymptoticLimits"
 expsig=0
 if [[ "$2" == "full" ]]; then
   #addargs='" --freezeParameters rgx{.*multijet_mcstat.*}"'
   fullstr=" --full"
   #addargs='"-t -1 --freezeParameters allConstrainedNuisances"'
-  #addargs='"-t -1"'
+  #addargs='"-t -1 --toysFreq"'
 elif [[ "$2" == "full200" ]]; then
   fullstr=" --full"
   masslist=(200)
@@ -59,7 +59,7 @@ fi
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} #--addargs '" --freezeParameters wlnueffSF_hadhad,wlnueffSF_hadel,wlnueffSF_hadmu,topeffSF_hadhad,topeffSF_hadel,topeffSF_hadmu,wlnuLeffSF_hadhad,wlnuLeffSF_hadel,wlnuLeffSF_hadmu,topLeffSF_hadhad,topLeffSF_hadel,topLeffSF_hadmu"'
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig 0 --mode AsymptoticLimits --masses ${masslist[@]} --addargs '" --freezeParameters r_dy_hadmu,dy_eff_hadmu,r_dy_hadel,dy_eff_hadel,r_dy_hadhad,dy_eff_hadhad"' --nopass
 #python reloadFromPkl.py --indir /uscms_data/d3/drankin/HTauTau/boostedhiggs_v2/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig 0 --mode AsymptoticLimits --masses ${masslist[@]} --addargs '"-t -1"'
-python reloadFromPkl.py --indir /uscms_data/d3/eamoreno/Analysis/phitautau/CMSSW_10_2_13/src/phitautau-fitcode/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass}
+python reloadFromPkl.py --indir /uscms_data/d3/eamoreno/Analysis/phitautau/CMSSW_10_2_13/src/phitautau-fitcode/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass} 
 #python reloadFromPkl_old.py --indir /uscms/home/eamoreno/nobackup/Analysis/phitautau/boostedhiggs/cards/ --outdir $1 --pkl ${modellist[@]} ${fullstr} --expsig ${expsig} --mode ${mode} --masses ${masslist[@]} --addargs "${addargs}" ${nopass}
 echo "here"
 OUTPUT=($1)
@@ -70,6 +70,7 @@ for MODEL in ${modellist[@]}; do
     echo ${MASS}
     cd ${OUTPUT[-1]}/${MODEL}_m${MASS}/
     source build.sh >& out.log
+    #source build_gof.sh >& out_gof.log
     if [[ "${mode}" == "Significance" ]]; then
       grep "Significance:" out.log
     elif [[ "${mode}" == "AsymptoticLimits" ]]; then

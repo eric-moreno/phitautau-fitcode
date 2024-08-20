@@ -1,11 +1,14 @@
 import numpy as np
 import logging
 import rhalphalib as rl
+from rhalphalib import MorphHistW2, AffineMorphTemplate
 from utils import intRegion, getQCDFromData
 from coffea import hist
 import matplotlib.pyplot as plt
 
 rl.ParametericSample.PreferRooParametricHist = True
+
+debug_plots = False
 
 def plot_histogram(data, bins, title):
     """
@@ -59,6 +62,7 @@ def plot_overlayed_histograms(nom_counts, shift_dn_counts, shift_up_counts, bins
 
 # Example bin edges and counts
 bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+#bins = np.array([20, 40, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350]) #wider bins lowmass problems
 
 
 class Cards:
@@ -96,14 +100,41 @@ class Cards:
             ]
         )
 
+        self.mttbins_cut = np.array(
+            [
+                0.0,
+                20.0,
+                40.0,
+                60.0,
+                70.0,
+                80.0,
+                90.0,
+                100.0,
+                110.0,
+                120.0,
+                130.0,
+                140.0,
+                150.0,
+                200.0,
+                250.0,
+                300.0,
+                350.0,
+                400.0,
+            ]
+        )
+
         # bin slice
+        self.lowbin_rebin = 1
+        self.highbin_rebin = -1
         self.lowbin = 2
         self.highbin = -1
+        self.mttbins_nom_rebin = self.mttbins_cut[self.lowbin_rebin : self.highbin_rebin]
         self.mttbins_nom = self.mttbins[self.lowbin : self.highbin]
         self.mttrange = range(len(self.mttbins_nom))
 
         # mass range
         self.mass = "massreg"
+        self.massone = "massreg "
         self.lowqcdmass = 55.0 if self.islephad else 105.0
         self.highmass = 145.0 if self.islephad else 145.0
         self.lowqcdincrease = 0.5
@@ -114,6 +145,9 @@ class Cards:
 
         # signal names
         self.doHtt = False
+        if self.doHtt: 
+            for i in range(100):
+                print("DOING HTT DOING HTT DONT IGNORE ME")
         self.signame = "htt125" if self.doHtt else "phitt"
         self.sigexname = "htt125" if self.doHtt else "phitt50"
         #print(self.signame)
@@ -145,7 +179,8 @@ class Cards:
             "htt125": ["h125"],
             "multijet": ["qcd"],
             "dy": ["zem", "ztt"],
-            "wlnu": ["wjets", "vv", "vqq"],
+            "wlnu": ["wjets"],
+            "vvqq": ["vv", "vqq"],
             "ignore": [],
         }
 
@@ -176,7 +211,7 @@ class Cards:
         #sys.exit()
         # met cuts
         cuts = {
-            "lowmet": 20.0,
+            "lowmet": 50.0,
             "met": 75.0,
         }
         # met cut is tighter for hadhad region
@@ -247,8 +282,9 @@ class Cards:
 
         # initialize observable
         self.mtt = rl.Observable(self.mass, self.mttbins_nom)
+        self.mttrebin = rl.Observable(self.mass, self.mttbins_nom_rebin)
         self.mttone = rl.Observable(
-            self.mass,
+            self.massone,
             np.array([self.mttbins[self.lowbin], self.mttbins[self.highbin - 1]]),
         )
 
@@ -443,7 +479,7 @@ class Cards:
 
 
         # mass scale 
-        self.m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
+        #self.m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
         self.m_scale_bkg = rl.NuisanceParameter(f"massscale_bkg_{cat}", "shape")
 
         # add uncertainty for low mass
@@ -481,6 +517,8 @@ class Cards:
             if self.mttbins_nom[ix] < self.lowqcdmass
         ]
 
+        self.sys_smear = rl.NuisanceParameter('CMS_resonance_smear', 'shape')
+        self.sys_shift = rl.NuisanceParameter('CMS_resonance_shift', 'shape')
         # self.qcd_lowmass = rl.NuisanceParameter(f"qcd_lowmass_bin_{cat}", "shape")
         # self.qcd_lowmass_top = rl.NuisanceParameter(f"qcd_lowmass_top_bin_{cat}", "shape")
         # self.qcd_lowmass_wlnu = rl.NuisanceParameter(f"qcd_lowmass_wlnu_bin_{cat}", "shape")
@@ -497,11 +535,11 @@ class Cards:
         :type default: float
         """
         return getQCDFromData(
-            hists, region, self.nnCut, self.nnCutLoose, self.nnCutFail, default=default, test=test
+            hists, region, self.nnCut, self.nnCutLoose, self.nnCutFail, default=default, test=test, mrebin=False
         )
 
     def _get_region(
-        self, h: hist.Hist, region: str, syst: str = "nominal", debug: bool = False
+        self, h: hist.Hist, region: str, syst: str = "nominal", debug: bool = False, rebin = False
     ):
         """
         Get region by integrating over nn cut and/or met/mass/pt cuts
@@ -514,6 +552,7 @@ class Cards:
             self.nnCutFail,
             systematic=syst,
             debug=debug,
+            mrebin = rebin
         )
 
     def _events(self, template, singlebin=False, clip=True):
@@ -540,22 +579,23 @@ class Cards:
             templ = np.array([np.sum(templ)])
         return templ
 
-    def get_template(self, h, region, syst, singlebin, debug, clip=True):
+    def get_template(self, h, region, syst, singlebin, rebin, debug, clip=True):
         """
         Get template ntuple
         """
-        tempint = self._get_region(h, region, syst, debug)
+        tempint = self._get_region(h, region, syst, debug, rebin=rebin)
         events = self._events(tempint, singlebin, clip)
         sumw = self._sumw(tempint, singlebin)
         template = (
             events,
-            self.mttone.binning if singlebin else self.mtt.binning,
-            self.mttone.name if singlebin else self.mtt.name,
+            (self.mttone.binning if singlebin else (self.mttrebin.binning if rebin else self.mtt.binning)),
+            (self.mttone.name if singlebin else (self.mttrebin.binning if rebin else self.mtt.name)),
             sumw,
         )
         return template, events
+    
 
-    def systs_mass(self, h, region, sample, sample_template, singlebin=False, analysis_region=None):
+    def systs_mass(self, h, region, sample, sample_template, template_nonrl, singlebin=False, analysis_region=None,):
         """
         Add mass systematics
         """
@@ -575,11 +615,14 @@ class Cards:
                 self.lowbin + 1 : self.highbin + 1 if self.highbin != -1 else None
             ]
             shiftwidth = self.mttbins[1] - self.mttbins[0]
+
             bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
-            #plot_histogram(nom, bins, f'{sample.name}_NominalHistogram')
-            #plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogram')
-            #plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogram')
-            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{sample.name}_OverlayedHistograms')
+
+            if debug_plots:
+                plot_histogram(nom, bins, f'{sample.name}_NominalHistogram')
+                plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogram')
+                plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogram')
+                plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{sample.name}_OverlayedHistograms')
 
             # dnfrac = np.array(
             #     [
@@ -609,17 +652,20 @@ class Cards:
             shiftfrac_up = np.append(shiftfrac, shiftfrac[-1])[1:]
             shift_dn = shift_dn*shiftfrac_dn + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_dn)
             shift_up = shift_up*shiftfrac_up + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_up)
-            #plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogramAfterMultiplication')
-            #plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogramAfterMultiplication')
+            if debug_plots: 
+                plot_histogram(shift_dn, bins, f'{sample.name}_ShiftDownHistogramAfterMultiplication')
+                plot_histogram(shift_up, bins, f'{sample.name}_ShiftUpHistogramAfterMultiplication')
+                plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
 
-            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
+            # syst_template.setParamEffect(
+            #     self.m_scale,
+            #     np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+            #     np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+            # )
 
-            syst_template.setParamEffect(
-                self.m_scale,
-                np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
-                np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
-            )
-        
+            # print(np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0))
+            # print(np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0))
+            # sys.exit()
         if (
             sample.name == "top" or sample.name == "wlnu"
         ) and not singlebin:
@@ -636,7 +682,9 @@ class Cards:
 
 
             bins = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
-            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{cat}_{region}_{sample.name}_OverlayedHistograms')
+
+            if debug_plots: 
+                plot_overlayed_histograms(nom, shift_dn, shift_up, bins, F'{cat}_{region}_{sample.name}_OverlayedHistograms')
 
             # dnfrac = np.array(
             #     [
@@ -667,7 +715,8 @@ class Cards:
             shift_dn = shift_dn*shiftfrac_dn + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_dn)
             shift_up = shift_up*shiftfrac_up + nom_full[self.lowbin:self.highbin]*(1.-shiftfrac_up)
 
-            #plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
+            if debug_plots:
+                plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
 
             syst_template.setParamEffect(
                 self.m_scale_bkg,
@@ -676,8 +725,18 @@ class Cards:
             )
         
 
+        smear_syst=True
 
+        if smear_syst and sample.name not in ['top', 'multijet', 'wlnu', 'data_obs']:
+            mtempl = MorphHistW2(template_nonrl)
+            _up = mtempl.get(smear=1 + 0.20)
+            _down = mtempl.get(smear=1 - 0.20)
+            syst_template.setParamEffect(self.sys_smear, _up[0], _down[0], scale=1)
 
+            _up = mtempl.get(shift = 2)
+            _down = mtempl.get(shift = -2)
+            syst_template.setParamEffect(self.sys_shift, _up[0], _down[0], scale=1)
+            
         return syst_template
 
     def systs_shape(self, h, region, sample, sample_template, singlebin=False):
@@ -838,7 +897,7 @@ class Cards:
             "2017": [1.02, 1.009, 1.006],
             "2018": [1.015, 1.02, 1.002],
         }[self.year]
-
+        
         if sample.name != "multijet":
             syst_template.setParamEffect(
                 self.syst_dict[f"CMS_trig_{cat}"], 1.02
@@ -852,6 +911,12 @@ class Cards:
 
             print(sample.name)
             if sample.name == "top" or sample.name == "wlnu":
+                if singlebin: 
+                    qcd['nom'] = np.clip(np.array([np.sum(qcd["nom"])]), 0.0, None)
+                    qcd['up'] = np.clip(np.array([np.sum(qcd["up"])]), 0.0, None)
+                    qcd['dn'] = np.clip(np.array([np.sum(qcd["dn"])]), 0.0, None)
+                    qcd['up2'] = np.clip(np.array([np.sum(qcd["up2"])]), 0.0, None)
+                    qcd['dn2'] = np.clip(np.array([np.sum(qcd["dn2"])]), 0.0, None)
                 qcd_shape_dn_1 = np.divide(
                     qcd["dn"],
                     qcd["nom"],
@@ -881,9 +946,25 @@ class Cards:
                 # print(qcd["nom"])
                 # print(qcd["up"])
                 # print(qcd["up2"])
-                #plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
-                #plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
+                if debug_plots: 
+                    plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
+                    plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
 
+                def symmetrize_binwise(dn, up):
+                    sym_dn = np.copy(dn)
+                    sym_up = np.copy(up)
+                    for i in range(len(dn)):
+                        fluct_dn = 1.0 - dn[i]
+                        fluct_up = up[i] - 1.0
+                        min_fluct = min(abs(fluct_dn), abs(fluct_up))
+                        sym_dn[i] = 1.0 - min_fluct
+                        sym_up[i] = 1.0 + min_fluct
+                    return sym_dn, sym_up
+
+                symmetrized_dn_1, symmetrized_up_1 = symmetrize_binwise(qcd_shape_dn_1, qcd_shape_up_1)
+                symmetrized_dn_2, symmetrized_up_2 = symmetrize_binwise(qcd_shape_dn_2, qcd_shape_up_2)
+
+                '''
                 if sample.name == 'top':
                     print(sample.name)
                     print('TOP')
@@ -906,9 +987,32 @@ class Cards:
                         syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
                                                 np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
                                                 np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                '''
+                if not singlebin: 
+                    if sample.name == 'top':
+                        print(sample.name)
+                        print('TOP')
+                        for imx in range(len(self.qcd_lowmass_top_1)):
+                            syst_template.setParamEffect(self.qcd_lowmass_top_1[imx],
+                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                        
+                        for imx in range(len(self.qcd_lowmass_top_2)):
+                            syst_template.setParamEffect(self.qcd_lowmass_top_2[imx],
+                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
 
-                
-
+                    elif sample.name == 'wlnu':
+                        print('WLNU')
+                        for imx in range(len(self.qcd_lowmass_wlnu_1)):
+                            syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[imx],
+                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                        
+                        for imx in range(len(self.qcd_lowmass_wlnu_2)):
+                            syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
+                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
 
         else:
             if not singlebin:
@@ -925,8 +1029,9 @@ class Cards:
                     where=qcd["nom"] > 0.0,
                 )
 
-                #plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
-                #plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
+                if debug_plots: 
+                    plot_overlayed_histograms(qcd["nom"], qcd["dn"],  qcd["up"], bins, f'{analysis_region}_{region}_{sample.name}_Method1')
+                    plot_overlayed_histograms(qcd["nom"], qcd["dn2"],  qcd["up2"], bins, f'{analysis_region}_{region}_{sample.name}_Method2')
 
                 if "dn2" in qcd.keys():
                     qcd_shape_dn_2 = np.divide(
@@ -942,7 +1047,21 @@ class Cards:
                         out=np.ones_like(qcd["nom"]),
                         where=qcd["nom"] > 0.0,
                     )
-
+                
+                def symmetrize_binwise(dn, up):
+                    sym_dn = np.copy(dn)
+                    sym_up = np.copy(up)
+                    for i in range(len(dn)):
+                        fluct_dn = 1.0 - dn[i]
+                        fluct_up = up[i] - 1.0
+                        min_fluct = min(abs(fluct_dn), abs(fluct_up))
+                        sym_dn[i] = 1.0 - min_fluct
+                        sym_up[i] = 1.0 + min_fluct
+                    return sym_dn, sym_up
+                
+                symmetrized_dn_1, symmetrized_up_1 = symmetrize_binwise(qcd_shape_dn_1, qcd_shape_up_1)
+                symmetrized_dn_2, symmetrized_up_2 = symmetrize_binwise(qcd_shape_dn_2, qcd_shape_up_2)
+                
                 qcd_nuisance_1 = {
                     "pass": self.qcd_pass_1,
                     "loosepass": self.qcd_loosepass_1,
@@ -990,20 +1109,26 @@ class Cards:
                 #                             np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
                 #                             np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
                 
+                '''
                 for imx in range(len(self.qcd_lowmass_1)):
                     syst_template.setParamEffect(self.qcd_lowmass_1[imx],
                                             np.array([qcd_shape_dn_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
                                             np.array([qcd_shape_up_1[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
                 
-                # print(qcd_shape_dn_1)
-                # print(qcd_shape_up_1)
-                # print(qcd_shape_dn_2)
-                # print(qcd_shape_up_2)
                 for imx in range(len(self.qcd_lowmass_2)):
                     syst_template.setParamEffect(self.qcd_lowmass_2[imx],
                                             np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
                                             np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
+                '''
+                for imx in range(len(self.qcd_lowmass_1)):
+                    syst_template.setParamEffect(self.qcd_lowmass_1[imx],
+                                                np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
 
+                for imx in range(len(self.qcd_lowmass_2)):
+                    syst_template.setParamEffect(self.qcd_lowmass_2[imx],
+                                                np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
                 # syst_template.setParamEffect(self.qcd_lowmass_top, qcd_shape_dn, qcd_shape_up)
                     
                 # syst_template.setParamEffect(self.qcd_lowmass_wlnu, qcd_shape_dn, qcd_shape_up)
@@ -1018,6 +1143,7 @@ class Cards:
         qcd,
         unblind=False,
         singlebin=False,
+        rebin=False,
         qcdnormSF=None,
         debug=False,
     ):
@@ -1058,7 +1184,7 @@ class Cards:
             # get template from that MC/data sample
             h = hchannel[sample]
             template, events = self.get_template(
-                h, region, "nominal", singlebin, debug, clip=True
+                h, region, "nominal", singlebin, rebin, debug, clip=True
             )
 
             # if the sample is multijet(QDC) take "qcd" i.e. the prediction from data
@@ -1071,33 +1197,20 @@ class Cards:
     
                 template = (
                     clip,
-                    self.mttone.binning if singlebin else self.mtt.binning,
-                    self.mttone.name if singlebin else self.mtt.name,
-                    np.array([template[-1]])
-                    if singlebin
-                    else template[-1], 
+                    (self.mttone.binning if singlebin else (self.mttrebin.binning if rebin else self.mtt.binning)),
+                    (self.mttone.name if singlebin else (self.mttrebin.name if rebin else self.mtt.name)),
+                    (np.array([template[-1]]) if singlebin else template[-1])
                 )
 
             if sample.name == "data_obs":
                 #print("XXXX")
                 #print("Data", template)
+                print(template)
                 ch.setObservation(template[:-1])
                 #ch.setObservation(template, read_sumw2=True)
             else:
-                
-                MORPHNOMINAL = True
-                def smorph(templ, sName):
-                    if templ is None:
-                        return None
-                    if MORPHNOMINAL and sName not in ['qcd']: #what do here
-                        return MorphHistW2(templ).get(shift=SF[year]['shift_SF']/smass('wcq') * smass(sName),
-                                                      smear=SF[year]['smear_SF']
-                                                      )
-                    else:
-                        return templ
-                #template = smorph(template, sample.name)
-
-
+                print(template)
+                print(sample.name)
                 sample_template = rl.TemplateSample(
                     f"{ch.name}_{sample.name}",
                     rl.Sample.SIGNAL
@@ -1117,7 +1230,7 @@ class Cards:
                 )
                 # mass systematics - skipping for now
                 sample_template = self.systs_mass(
-                    h, region, sample, sample_template, singlebin, analysis_region
+                    h, region, sample, sample_template, template, singlebin, analysis_region, 
                 )
                 # norm systematics
                 sample_template = self.systs_norm(
@@ -1143,6 +1256,22 @@ class Cards:
             )
             
         ch.autoMCStats(epsilon=1e-4, threshold=1)
+        #ch.autoMCStats(epsilon=1e-4)
+
+
+        #masking 
+        # if analysis_region == 'wlnuCR' and region == "fail":
+        #     mask = np.array([False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True])
+        #     ch.mask = mask
+        
+        # if analysis_region == 'wlnuCR' and region == "pass":
+        #     mask = np.array([False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True])
+        #     ch.mask = mask
+
+        # if analysis_region == 'topCR' and region == "pass":
+        #     mask = np.array([True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True])
+        #     ch.mask = mask
+    
         # add channel
         self.model.addChannel(ch)
         
@@ -1154,7 +1283,7 @@ class Cards:
 
         # top normalization
         # QUESTION: shouldn't this be loose/pass?
-        unifiedBkgEff_flag = True
+        unifiedBkgEff_flag = False
 
         topLPF = (
             self.model[str_pass]["top"].getExpectation(nominal=True).sum()
