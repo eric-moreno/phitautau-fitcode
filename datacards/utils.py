@@ -35,7 +35,7 @@ def intRegion(
     the_int = inhist.integrate("nn_disc", theslice, overflow_str).integrate(
         "systematic", systematic
     )
-    print('THE INT', the_int)
+    #print('THE INT', the_int)
     if debug:
         print("nn slice ", theslice, "nn ", nnCut, " l ", nnCut_loose)
         print("overflow ", overflow_str, the_int.values())
@@ -54,7 +54,7 @@ def intRegion(
     #     print(new_bin_edges)
     #     # Perform rebinning
     #     the_int = the_int.rebin("massreg", hist.Bin("massreg", "massreg", new_bin_edges))
-    print(the_int)
+    #print(the_int)
         #the_int = the_int.rebin("massreg", hist.Bin("massreg", "massreg", mrebin))
     # if mrebin:
     #     the_int = custom_rebin(the_int, "massreg")
@@ -75,7 +75,7 @@ def intRegion(
         logging.debug(
             f"Values: {the_int.values()} with mass slices and overflow {overflow_str}"
         )
-    print(the_int)
+    #print(the_int)
     # slice or sum samples
     if samplelist is not None:
         the_int = the_int.integrate("sample", samplelist).values(sumw2=True)[()]
@@ -85,7 +85,7 @@ def intRegion(
             the_int = the_int[()]
         else:
             the_int = np.zeros(len(mttbins) - 1, dtype=np.float32)
-    print(the_int)
+    #print(the_int)
     if debug:
         print("debug", the_int)
     logging.debug(f"After integrating: {the_int}")
@@ -127,8 +127,8 @@ def getQCDFromData_old(
         mslice=mslice,
     )[0][lowmassbin:highmassbin]
 
-    print('qcd data full~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print(qcd_data_full)
+    #print('qcd data full~!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    #print(qcd_data_full)
 
     other_mc = intRegion(
         inhist,

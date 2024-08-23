@@ -1,17 +1,17 @@
 from __future__ import print_function, division
 import sys
 import os
-import rhalphalib as rl
-print(os.path.dirname(rl.__file__))
-print(rl.__version__)
+#import rhalphalib as rl
+#print(os.path.dirname(rl.__file__))
+#print(rl.__version__)
 import numpy as np
 import scipy.stats
 import argparse
 import pickle
 import ROOT
-rl.util.install_roofit_helpers()
+#rl.util.install_roofit_helpers()
 #rl.ParametericSample.PreferRooParametricHist = False
-rl.ParametericSample.PreferRooParametricHist = True
+#rl.ParametericSample.PreferRooParametricHist = True
 
 
 def change_axis_name(model):
@@ -146,11 +146,12 @@ def reloadPkl(args):
             os.system("echo combine -M %s %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(args.mode,m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
 
             if args.full:
+                print('hi')
                 os.system("echo combine -M FitDiagnostics %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s --saveShapes --saveWithUncertainties -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
-                os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doInitialFit --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doFits --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --output impacts_m%s.json --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                os.system("echo plotImpacts.py -i impacts_m%s.json -o impacts_%s >> %s/%s_m%s/build.sh"%(mass,m,outdirname,m,mass))
+                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doInitialFit --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doFits --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --output impacts_m%s.json --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+                # os.system("echo plotImpacts.py -i impacts_m%s.json -o impacts_%s >> %s/%s_m%s/build.sh"%(mass,m,outdirname,m,mass))
             #     # #need to use \# not # for making comments
             
             # # # Saturated GoF tests

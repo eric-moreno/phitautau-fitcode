@@ -134,7 +134,7 @@ class Cards:
 
         # mass range
         self.mass = "massreg"
-        self.massone = "massreg "
+        self.massone = "massreg_one"
         self.lowqcdmass = 55.0 if self.islephad else 105.0
         self.highmass = 145.0 if self.islephad else 145.0
         self.lowqcdincrease = 0.5
@@ -731,11 +731,11 @@ class Cards:
             mtempl = MorphHistW2(template_nonrl)
             _up = mtempl.get(smear=1 + 0.20)
             _down = mtempl.get(smear=1 - 0.20)
-            syst_template.setParamEffect(self.sys_smear, _up[0], _down[0], scale=1)
+            syst_template.setParamEffect(self.sys_smear, _up[:-1], _down[:-1], scale=1)
 
             _up = mtempl.get(shift = 2)
             _down = mtempl.get(shift = -2)
-            syst_template.setParamEffect(self.sys_shift, _up[0], _down[0], scale=1)
+            syst_template.setParamEffect(self.sys_shift, _up[:-1], _down[:-1], scale=1)
             
         return syst_template
 
