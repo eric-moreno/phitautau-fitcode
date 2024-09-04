@@ -333,17 +333,17 @@ class Cards:
         
         syst_dict_JER = {    
             "uescale": [
-                rl.NuisanceParameter("uescale", "shape"),
+                rl.NuisanceParameter("uescale", "lnN"),
                 "UESDown",
                 "UESUp",
             ],
             "jescale": [
-                rl.NuisanceParameter("jescale", "shape"),
+                rl.NuisanceParameter("jescale", "lnN"),
                 "JESDown",
                 "JESUp",
             ],
             "jeresol": [
-                rl.NuisanceParameter("jeresol", "shape"),
+                rl.NuisanceParameter("jeresol", "lnN"),
                 "JERDown",
                 "JERUp",
             ],
@@ -369,12 +369,11 @@ class Cards:
             "CMS_dy_norm": rl.NuisanceParameter("CMS_dy_norm", "lnN"),
             f"CMS_trig_{cat}": rl.NuisanceParameter(f"CMS_trig_{cat}", "lnN"),
             f"CMS_id_{cat}": rl.NuisanceParameter(f"CMS_id_{cat}", "lnN"),
-        
         }
         
         if self.year not in ["2018"]:
             syst_dict_prefire = {"l1prefire": [
-                rl.NuisanceParameter("l1prefire", "shape"),
+                rl.NuisanceParameter("l1prefire", "lnN"),
                 "L1PreFiringDown",
                 "L1PreFiringUp",
             ]}
@@ -384,7 +383,7 @@ class Cards:
 
 
         syst_dict_top = {"toppt": [
-            rl.NuisanceParameter("toppt", "shape"),
+            rl.NuisanceParameter("toppt", "lnN"),
            "nominal",
            "TopPtReweightUp",]
         }
@@ -477,10 +476,17 @@ class Cards:
         self.qcd_loosepass_2 = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}", "shape")
         self.qcd_pass_2 = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}", "shape")
 
+        # self.qcd_fail_1 = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}", "lnN")
+        # self.qcd_loosepass_1 = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}", "lnN")
+        # self.qcd_pass_1 = rl.NuisanceParameter(f"qcd_Rpass_method1_{cat}", "lnN")
+
+        # self.qcd_fail_2 = rl.NuisanceParameter(f"qcd_Rfail_method2_{cat}", "lnN")
+        # self.qcd_loosepass_2 = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}", "lnN")
+        # self.qcd_pass_2 = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}", "lnN")
 
         # mass scale 
         #self.m_scale = rl.NuisanceParameter(f"massscale_{cat}", "shape")
-        self.m_scale_bkg = rl.NuisanceParameter(f"massscale_bkg_{cat}", "shape")
+        #self.m_scale_bkg = rl.NuisanceParameter(f"massscale_bkg_{cat}", "shape")
 
         # add uncertainty for low mass
         self.qcd_lowmass_1 = [
@@ -515,6 +521,29 @@ class Cards:
             rl.NuisanceParameter(f"qcd_lowmass_wlnu_method2_bin{ix}_{cat}", "shape")
             for ix in self.mttrange
             if self.mttbins_nom[ix] < self.lowqcdmass
+        ]
+
+        #combined lowmass
+        self.qcd_lowmass_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_method1_comb", "lnN")
+        ]
+
+        self.qcd_lowmass_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_method2_comb", "lnN")
+        ]
+
+        self.qcd_lowmass_top_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_top_method1_comb", "lnN")
+        ]
+        self.qcd_lowmass_top_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_top_method2_comb", "lnN")
+        ]
+
+        self.qcd_lowmass_wlnu_1 = [
+            rl.NuisanceParameter(f"qcd_lowmass_wlnu_method1_comb", "lnN")
+        ]
+        self.qcd_lowmass_wlnu_2 = [
+            rl.NuisanceParameter(f"qcd_lowmass_wlnu_method2_comb", "lnN")
         ]
 
         self.sys_smear = rl.NuisanceParameter('CMS_resonance_smear', 'shape')
@@ -718,11 +747,11 @@ class Cards:
             if debug_plots:
                 plot_overlayed_histograms(nom, shift_dn, shift_up, bins, f'{analysis_region}_{region}_{sample.name}_MassShift')
 
-            syst_template.setParamEffect(
-                self.m_scale_bkg,
-                np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
-                np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
-            )
+            # syst_template.setParamEffect(
+            #     self.m_scale_bkg,
+            #     np.divide(shift_dn, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+            #     np.divide(shift_up, nom_full[self.lowbin:self.highbin], out=np.ones_like(nom_full[self.lowbin:self.highbin]), where=nom_full[self.lowbin:self.highbin] > 0.0),
+            # )
         
 
         smear_syst=True
@@ -781,6 +810,7 @@ class Cards:
 
                 up = self._events(self._get_region(h, region, syst_up), clip=False)
                 dn = self._events(self._get_region(h, region, syst_dn))
+
                 up_var = (
                     np.divide(up, nom, out=np.ones_like(nom), where=nom > 0.0)
                     if (up != nom).all()
@@ -791,11 +821,12 @@ class Cards:
                     if (dn != nom).all()
                     else np.ones_like(nom) * 0.999
                 )
-                syst_template.setParamEffect(
-                    nuisance,
-                    np.array([np.sum(up_var)]) if singlebin else up_var,
-                    np.array([np.sum(dn_var)]) if singlebin else dn_var,
-                )
+            
+                # syst_template.setParamEffect(
+                #     nuisance,
+                #     np.array([np.sum(up_var)]) if singlebin else up_var,
+                #     np.array([np.sum(dn_var)]) if singlebin else dn_var,
+                # )
         #print(syst_template)
         #print('syst template')
         return syst_template
@@ -992,27 +1023,51 @@ class Cards:
                     if sample.name == 'top':
                         print(sample.name)
                         print('TOP')
-                        for imx in range(len(self.qcd_lowmass_top_1)):
-                            syst_template.setParamEffect(self.qcd_lowmass_top_1[imx],
-                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+
+                        # bin by bin nuisances
+                        # for imx in range(len(self.qcd_lowmass_top_1)):
+                        #     syst_template.setParamEffect(self.qcd_lowmass_top_1[imx],
+                        #                                 np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                        #                                 np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
                         
-                        for imx in range(len(self.qcd_lowmass_top_2)):
-                            syst_template.setParamEffect(self.qcd_lowmass_top_2[imx],
-                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                        # for imx in range(len(self.qcd_lowmass_top_2)):
+                        #     syst_template.setParamEffect(self.qcd_lowmass_top_2[imx],
+                        #                                 np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                        #                                 np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+
+                        #combined nuisances not bin by bin
+                        syst_template.setParamEffect(self.qcd_lowmass_top_1[0],
+                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                        
+                        syst_template.setParamEffect(self.qcd_lowmass_top_2[0],
+                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+
 
                     elif sample.name == 'wlnu':
                         print('WLNU')
-                        for imx in range(len(self.qcd_lowmass_wlnu_1)):
-                            syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[imx],
-                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+
+                        # bin by bin nuisances
+                        # for imx in range(len(self.qcd_lowmass_wlnu_1)):
+                        #     syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[imx], 
+                        #                                 np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                        #                                 np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
                         
-                        for imx in range(len(self.qcd_lowmass_wlnu_2)):
-                            syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
-                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                        # for imx in range(len(self.qcd_lowmass_wlnu_2)):
+                        #     syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
+                        #                                 np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                        #                                 np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                        
+                        
+                        #combined nuisances not bin by bin
+                        syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[0], 
+                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                        
+                        syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[0],
+                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
 
         else:
             if not singlebin:
@@ -1120,15 +1175,29 @@ class Cards:
                                             np.array([qcd_shape_dn_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]),
                                             np.array([qcd_shape_up_2[imx] if ix==imx else 1.0 for ix in range(len(qcd['nom']))]))
                 '''
-                for imx in range(len(self.qcd_lowmass_1)):
-                    syst_template.setParamEffect(self.qcd_lowmass_1[imx],
-                                                np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                # bin by bin nuisances
+                #  for imx in range(len(self.qcd_lowmass_1)):
+                #     syst_template.setParamEffect(self.qcd_lowmass_1[imx],
+                #                                 np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                #                                 np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
 
-                for imx in range(len(self.qcd_lowmass_2)):
-                    syst_template.setParamEffect(self.qcd_lowmass_2[imx],
-                                                np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                # for imx in range(len(self.qcd_lowmass_2)):
+                #     syst_template.setParamEffect(self.qcd_lowmass_2[imx],
+                #                                 np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
+                #                                 np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+
+
+                #combined nuisances not bin by bin
+                syst_template.setParamEffect(self.qcd_lowmass_1[0],
+                                                np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+
+                syst_template.setParamEffect(self.qcd_lowmass_2[0],
+                                                np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
+                                                np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+
+
+
                 # syst_template.setParamEffect(self.qcd_lowmass_top, qcd_shape_dn, qcd_shape_up)
                     
                 # syst_template.setParamEffect(self.qcd_lowmass_wlnu, qcd_shape_dn, qcd_shape_up)

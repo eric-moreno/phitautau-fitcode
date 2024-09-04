@@ -340,14 +340,14 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
         nom   B      E       F         H       K      L
 
         Method 1:
-        B = H(shape) * A/G   H * G/G
-        E = H(shape) * C/G   H * I/G
-        F = H(shape) * D/G   H * J/G
+        B = H(shape) * A/G   #H * G/G
+        E = H(shape) * C/G   #H * I/G
+        F = H(shape) * D/G   #H * J/G
 
         Method 2:
-        B = A(shape) * H/G   G * H/G
-        E = A(shape) * K/G   G * K/G
-        F = A(shape) * L/G   G * L/G
+        B = A(shape) * H/G   #G * H/G
+        E = A(shape) * K/G   #G * K/G
+        F = A(shape) * L/G   #G * L/G
 
         Method 3: 
         (Method1 + Method2)/2
@@ -499,7 +499,28 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                     elif var == "up":
                         qcd_pred[key]["up"] = methodc+((methodc-(method1))/2)                  
                         qcd_pred[key]["up2"] = methodc+((methodc-(method2))/2)
-                    # print('METHODS', key)
+                    
+                    # methodc = (method1 + method2) / 2
+                    # if var == "nom":
+                    #     qcd_pred[key][var] = methodc
+                    # elif var == "dn":
+                    #     qcd_pred[key]["dn"] = methodc + abs(method1 - methodc)
+                    #     qcd_pred[key]["dn2"] = methodc + abs(method2 - methodc)
+                    # elif var == "up":
+                    #     qcd_pred[key]["up"] = methodc - abs(method1 - methodc)
+                    #     qcd_pred[key]["up2"] = methodc - abs(method2 - methodc)
+                    
+                    # methodc = (method1 + method2) / 2
+                    # if var == "nom":
+                    #     qcd_pred[key][var] = methodc
+                    # elif var == "dn":
+                    #     qcd_pred[key]["dn"] = method1
+                    #     qcd_pred[key]["dn2"] = method2
+                    # elif var == "up":
+                    #     qcd_pred[key]["up"] = method1
+                    #     qcd_pred[key]["up2"] = method2
+
+                    # # print('METHODS', key)
                     # print(methodc)
                     # print(methodc-((methodc-(method1))/2))
                     # print(methodc-((methodc-(method2))/2))
