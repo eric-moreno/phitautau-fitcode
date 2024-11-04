@@ -112,8 +112,8 @@ def getQCDRatio(c, hists_qcd):
 
     qcd_ratio = collections.defaultdict(dict)
     for analysis_region in c.regions:
-        if analysis_region == "qcd_cr":
-            continue
+        #if analysis_region == "qcd_cr":
+        #    continue
 
         logger.info(f" QCD ratio for analysis region {analysis_region}")
 
@@ -139,13 +139,13 @@ def getQCDRatio(c, hists_qcd):
                         "sig": hists_qcd["sig"]["fail"][category],
                         "top_cr": hists_qcd["top_cr"]["fail"][category],
                         "wlnu_cr": hists_qcd["wlnu_cr"]["fail"][category],
-                        #"qcd_cr": hists_qcd["qcd_cr"]["fail"][category],
+                        "qcd_cr": hists_qcd["qcd_cr"]["fail"][category],
                     },
                     "nom_to_fail": {
                         "sig": hists_qcd["qcd_cr"]["nom"][category],
                         "top_cr": hists_qcd["qcd_cr"]["nom"][category],
                         "wlnu_cr": hists_qcd["qcd_cr"]["nom"][category],
-                        #"qcd_cr": hists_qcd["qcd_cr"]["nom"][category],
+                        "qcd_cr": hists_qcd["qcd_cr"]["nom"][category],
 
                     },
                 }[qcdregion][analysis_region]
@@ -207,8 +207,8 @@ def getQCDRatiohadhad(c, hists_qcd):
 
     qcd_ratio = collections.defaultdict(dict)
     for analysis_region in c.regions:
-        if analysis_region == "qcd_cr":
-            continue
+        #if analysis_region == "qcd_cr":
+        #    continue
 
         logger.info(f" QCD ratio for analysis region {analysis_region}")
 
@@ -230,7 +230,7 @@ def getQCDRatiohadhad(c, hists_qcd):
                         "sig": hists_qcd["sig"]["fail"][category], #B
                         "top_cr": hists_qcd["top_cr"]["fail"][category],
                         "wlnu_cr": hists_qcd["wlnu_cr"]["fail"][category],
-                        #"qcd_cr": hists_qcd["qcd_cr"]["fail"][category],
+                        "qcd_cr": hists_qcd["qcd_cr"]["fail"][category],
                     },
                 }[qcdregion][analysis_region]
 
@@ -401,11 +401,11 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                     #qcd_ratio["wlnu_cr"]["nom_to_fail"][region],
                     #ratio_F["wlnu_cr"]["qcdcr_nom"][region],
                 ],
-                #"qcd_cr": [
-                #    hists_qcd["qcd_cr"]["nom"]["fail"],
-                #    qcd_ratio["qcd_cr"]["sig_to_qcd"][region],
-                #    #ratio_F["qcd_cr"]["noqcdcr_fail"][region],    
-                #],
+                "qcd_cr": [
+                   hists_qcd["qcd_cr"]["nom"]["fail"],
+                   qcd_ratio["qcd_cr"]["sig_to_qcd"][region],
+                   #ratio_F["qcd_cr"]["noqcdcr_fail"][region],    
+                ],
                 
             },
             2: {
@@ -424,11 +424,11 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                     qcd_ratio["wlnu_cr"]["nom_to_fail"][region],
                     #ratio_F["wlnu_cr"]["qcdcr_nom"][region],
                 ],
-                #"qcd_cr": [
-                #    hists_qcd["qcd_cr"]["fail"]["fail"],
-                #    qcd_ratio["qcd_cr"]["nom_to_fail"][region],
-                #    #ratio_F["qcd_cr"]["qcdcr_nom"][region],
-                #],
+                "qcd_cr": [
+                   hists_qcd["qcd_cr"]["fail"]["fail"],
+                   qcd_ratio["qcd_cr"]["nom_to_fail"][region],
+                   #ratio_F["qcd_cr"]["qcdcr_nom"][region],
+                ],
             },
             4: {
                 "sig": [
@@ -443,10 +443,10 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                     hists_qcd["wlnu_cr"]["nom"]["fail"],
                     qcd_ratio_hadhad["wlnu_cr"]["B"][region],
                 ],
-                #"qcd_cr": [
-                #    hists_qcd["qcd_cr"]["nom"]["fail"],
-                #    qcd_ratio_hadhad["qcd_cr"]["B"][region],
-                #],
+                "qcd_cr": [
+                   hists_qcd["qcd_cr"]["nom"]["fail"],
+                   qcd_ratio_hadhad["qcd_cr"]["B"][region],
+                ],
             },
         }
 
@@ -456,14 +456,14 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
                 "sig": 3,  # average
                 "top_cr": 3,
                 "wlnu_cr": 3,
-                #"qcd_cr": 1
+                "qcd_cr": 1
             }
         else:
             method_to_use = {
                 "sig": 4,  # hadhad special method
                 "top_cr": 3,
                 "wlnu_cr": 3,
-                #"qcd_cr": 1,
+                "qcd_cr": 1,
             }
         print("REGION")
         print(region)
@@ -599,13 +599,13 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
             debug=False,
         )
 
-        # c.build_channel(
-        #     "qcdCR",
-        #     region,
-        #     hists["qcd_cr"]["nom"],
-        #     qcdpred["qcd_cr"],
-        #     singlebin=singlebinCR,
-        # )
+        #c.build_channel(
+        #    "qcdCR",
+        #    region,
+        #    hists["qcd_cr"]["nom"],
+        #    qcdpred["qcd_cr"],
+        #    singlebin=singlebinCR,
+        #)
 
         # add top control region
         logging.info(f"Building {region}-topCR region")
