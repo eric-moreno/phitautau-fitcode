@@ -13,9 +13,9 @@ fi
 fullstr=""
 #masslist=(10 20 30 40 50 75 100 125 150 200 250 300)
 #masslist=(30 40 50 75 100 125 150 200 250 300)
-masslist=(50 125 200)
+#masslist=(50 125 200)
 #masslist=(30 200)
-#masslist=(125)
+masslist=(50)
 #addargs='"--toysFreq"'
 #addargs='""'
 #nopass=""
@@ -69,8 +69,20 @@ for MODEL in ${modellist[@]}; do
   for MASS in ${masslist[@]}; do
     echo ${MASS}
     cd ${OUTPUT[-1]}/${MODEL}_m${MASS}/
+
+    # Remove just the text 'passhadel2017=passhadel2017.txt', 'passhadmu2017=passhadmu2017.txt', or 'passhadhad2017=passhadhad2017.txt' without deleting the whole line
+    if [[ -f "build.sh" ]]; then
+      sed -i 's/passhadel2017=passhadel2017.txt//g; s/passhadmu2017=passhadmu2017.txt//g; s/passhadhad2017=passhadhad2017.txt//g' build.sh
+      echo "Removed assignments related to passhadel, passhadmu, passhadhad from build.sh in ${MODEL}_m${MASS}"
+    fi
+
+    if [[ -f "build_gof.sh" ]]; then
+      sed -i 's/passhadel2017=passhadel2017.txt//g; s/passhadmu2017=passhadmu2017.txt//g; s/passhadhad2017=passhadhad2017.txt//g' build_gof.sh
+      echo "Removed assignments related to passhadel, passhadmu, passhadhad from build_gof.sh in ${MODEL}_m${MASS}"
+    fi
+    
     source build.sh >& out.log
-    #source build_gof.sh >& out_gof.log
+    source build_gof.sh >& out_gof.log
     if [[ "${mode}" == "Significance" ]]; then
       grep "Significance:" out.log
     elif [[ "${mode}" == "AsymptoticLimits" ]]; then
