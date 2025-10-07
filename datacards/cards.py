@@ -72,7 +72,9 @@ class Cards:
         self.__name = cat
         self.year = year
         self.islephad = cat != "hadhad"
-
+        self.ishadmu = cat == "hadmu"
+        self.ishadel = cat == "hadel"
+        
         # regressed mass bins
         self.mttbins = np.array(
             [
@@ -135,7 +137,7 @@ class Cards:
         # mass range
         self.mass = "massreg"
         self.massone = "massreg_one"
-        self.lowqcdmass = 55.0 if self.islephad else 105.0
+        self.lowqcdmass = 45.0 if self.islephad else 105.0
         self.highmass = 145.0 if self.islephad else 145.0
         self.lowqcdincrease = 0.5
         self.highbkgincrease = 0.3
@@ -146,7 +148,7 @@ class Cards:
         # signal names
         self.doHtt = False
         if self.doHtt: 
-            for i in range(100):
+            for i in range(1000):
                 print("DOING HTT DOING HTT DONT IGNORE ME")
         self.signame = "htt125" if self.doHtt else "phitt"
         self.sigexname = "htt125" if self.doHtt else "phitt50"
@@ -155,10 +157,17 @@ class Cards:
         # neural network cuts
         # pass region
         self.nnCut = {
-            "hadhad": 0.9999,
-            "hadel": 0.98,
+            "hadhad": 0.999995,
+            "hadel": 0.994,
             "hadmu": 0.98,
         }[cat]
+
+        # self.nnCut = {
+        #     "hadhad": 0.9999,
+        #     "hadel": 0.98,
+        #     "hadmu": 0.98,
+        # }[cat]
+        
         # loose-pass region
         self.nnCutLoose = {
             "hadhad": 0.995,
@@ -166,10 +175,22 @@ class Cards:
             "hadmu": 0.9,
         }[cat]
 
+        # self.nnCut = {
+        #     "hadhad": 0.98,
+        #     "hadel": 0.98,
+        #     "hadmu": 0.98,
+        # }[cat]
+        # # loose-pass region
+        # self.nnCutLoose = {
+        #     "hadhad": 0.9,
+        #     "hadel": 0.9,
+        #     "hadmu": 0.9,
+        # }[cat]
+
         self.nnCutFail = {
             "hadhad": None,
-            "hadel": None,
-            "hadmu": None,
+            "hadel": 0.2,
+            "hadmu": 0.2,
         }[cat]
         
         # group samples
@@ -363,10 +384,12 @@ class Cards:
         # }
 
         syst_dict_norm = {
-            "CMS_vvqq_norm": rl.NuisanceParameter("CMS_vvqq_norm", "lnN"),
-            "CMS_top_norm": rl.NuisanceParameter("CMS_top_norm", "lnN"),
-            "CMS_wlnu_norm": rl.NuisanceParameter("CMS_wlnu_norm", "lnN") ,
-            "CMS_dy_norm": rl.NuisanceParameter("CMS_dy_norm", "lnN"),
+            "CMS_vvqq_norm": rl.NuisanceParameter(f"CMS_vvqq_norm_{cat}", "lnN"),
+            "CMS_top_norm": rl.NuisanceParameter(f"CMS_top_norm_{cat}", "lnN"),
+            "CMS_top_norm_wlnuCR": rl.NuisanceParameter(f"CMS_top_norm_wlnuCR_{cat}", "lnN"),
+            "CMS_wlnu_norm": rl.NuisanceParameter(f"CMS_wlnu_norm_{cat}", "lnN") ,
+            "CMS_wlnu_norm_topCR": rl.NuisanceParameter(f"CMS_wlnu_norm_topCR_{cat}", "lnN") ,
+            "CMS_dy_norm": rl.NuisanceParameter(f"CMS_dy_norm_{cat}", "lnN"),
             f"CMS_trig_{cat}": rl.NuisanceParameter(f"CMS_trig_{cat}", "lnN"),
             f"CMS_id_{cat}": rl.NuisanceParameter(f"CMS_id_{cat}", "lnN"),
         }
@@ -433,21 +456,25 @@ class Cards:
         )
 
         # Bkg efficiency
-        self.bkgeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 10)
-        self.bkgLeffSF = rl.IndependentParameter(f"bkgLeffSF_{cat}", 1.0, 0, 10)
+        self.bkgeffSF = rl.IndependentParameter(f"bkgeffSF_{cat}", 1.0, 0, 5)
+        self.bkgLeffSF = rl.IndependentParameter(f"bkgLeffSF_{cat}", 1.0, 0, 5)
 
         # Top efficiency
-        self.topeffSF = rl.IndependentParameter(f"topeffSF_{cat}", 1.0, 0, 10)
-        self.topLeffSF = rl.IndependentParameter(f"topLeffSF_{cat}", 1.0, 0, 10)
-
+        self.topeffSF = rl.IndependentParameter(f"topeffSF_{cat}", 1.0, 0, 5)
+        self.topLeffSF = rl.IndependentParameter(f"topLeffSF_{cat}", 1.0, 0, 5)
+        #self.topLeffSF = rl.NuisanceParameter(f"topLeffSF_{cat}", rl.Gaussian(1.0, 1.0))
+        #self.topLeffSF = rl.NuisanceParameter(f"topLeffSF_{cat}", "param", 1.0)
         # WJets efficiency
-        self.wlnueffSF = rl.IndependentParameter(f"wlnueffSF_{cat}", 1.0, 0, 10)
-        self.wlnuLeffSF = rl.IndependentParameter(f"wlnuLeffSF_{cat}", 1.0, 0, 10)
+        self.wlnueffSF = rl.IndependentParameter(f"wlnueffSF_{cat}", 1.0, 0, 5)
+        self.wlnuLeffSF = rl.IndependentParameter(f"wlnuLeffSF_{cat}", 1.0, 0, 5)
+        #self.wlnuLeffSF = rl.NuisanceParameter(f"wlnuLeffSF_{cat}", rl.Gaussian(1.0, 1.0))
+        #self.wlnuLeffSF = rl.NuisanceParameter(f"wlnuLeffSF_{cat}", "param", 1.0)
+        #self.wlnu_norm = rl.IndependentParameter(f"CMS_wlnu_norm", 1.0, 0, 5)
 
         self.rh125 = rl.NuisanceParameter(f"r_h125_{cat}", "lnN")
 
         # DY+Jets efficiency
-        self.dy_eff = rl.IndependentParameter(f"dy_eff_{cat}", 1.0, 0, 10)
+        self.dy_eff = rl.IndependentParameter(f"dy_eff_{cat}", 1.0, 0, 5)
 
         # top and wlnu shape
         self.top_highmass = [
@@ -467,7 +494,7 @@ class Cards:
                     highmassx = ix
         self.highmassx = highmassx
         
-        # QCD shape
+        # QCD shape sig 
         self.qcd_fail_1 = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}", "shape")
         self.qcd_loosepass_1 = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}", "shape")
         self.qcd_pass_1 = rl.NuisanceParameter(f"qcd_Rpass_method1_{cat}", "shape")
@@ -475,6 +502,24 @@ class Cards:
         self.qcd_fail_2 = rl.NuisanceParameter(f"qcd_Rfail_method2_{cat}", "shape")
         self.qcd_loosepass_2 = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}", "shape")
         self.qcd_pass_2 = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}", "shape")
+
+        # QCD Wlnu CR
+        self.qcd_fail_1_wlnu = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}_wlnu", "shape")
+        self.qcd_loosepass_1_wlnu = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}_wlnu", "shape")
+        self.qcd_pass_1_wlnu = rl.NuisanceParameter(f"qcd_Rpass_method1_{cat}_wlnu", "shape")
+
+        self.qcd_fail_2_wlnu = rl.NuisanceParameter(f"qcd_Rfail_method2_{cat}_wlnu", "shape")
+        self.qcd_loosepass_2_wlnu = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}_wlnu", "shape")
+        self.qcd_pass_2_wlnu = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}_wlnu", "shape")
+
+        # QCD Wlnu CR
+        self.qcd_fail_1_top = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}_top", "shape")
+        self.qcd_loosepass_1_top = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}_top", "shape")
+        self.qcd_pass_1_top = rl.NuisanceParameter(f"qcd_Rpass_method1_{cat}_top", "shape")
+
+        self.qcd_fail_2_top = rl.NuisanceParameter(f"qcd_Rfail_method2_{cat}_top", "shape")
+        self.qcd_loosepass_2_top = rl.NuisanceParameter(f"qcd_Rloosepass_method2_{cat}_top", "shape")
+        self.qcd_pass_2_top = rl.NuisanceParameter(f"qcd_Rpass_method2_{cat}_top", "shape")
 
         # self.qcd_fail_1 = rl.NuisanceParameter(f"qcd_Rfail_method1_{cat}", "lnN")
         # self.qcd_loosepass_1 = rl.NuisanceParameter(f"qcd_Rloosepass_method1_{cat}", "lnN")
@@ -550,10 +595,17 @@ class Cards:
                 rl.NuisanceParameter(f"qcd_lowmass_wlnu_method2_comb", "shape")
         ]
 
-        self.sys_smear = rl.NuisanceParameter('CMS_resonance_smear', 'shape')
-        self.sys_shift = rl.NuisanceParameter('CMS_resonance_shift', 'shape')
-        self.sys_smear_nonres = rl.NuisanceParameter('CMS_nonresonance_smear', 'shape')
-        self.sys_shift_nonres = rl.NuisanceParameter('CMS_nonresonance_shift', 'shape')
+        self.sys_smear = rl.NuisanceParameter(f'CMS_resonance_smear_{cat}', 'shape')
+        self.sys_shift = rl.NuisanceParameter(f'CMS_resonance_shift_{cat}', 'shape')
+        self.sys_smear_nonres = rl.NuisanceParameter(f'CMS_nonresonance_smear_{cat}', 'shape')
+        self.sys_shift_nonres = rl.NuisanceParameter(f'CMS_nonresonance_shift_{cat}', 'shape')
+        self.sys_smear_nonres_wlnu = rl.NuisanceParameter(f'CMS_nonresonance_smear_wlnu_{cat}', 'shape')
+        self.sys_shift_nonres_wlnu = rl.NuisanceParameter(f'CMS_nonresonance_shift_wlnu_{cat}', 'shape')
+        #self.sys_smear_nonres_wlnu_loose = rl.NuisanceParameter(f'CMS_nonresonance_smear_wlnu_loose_{cat}', 'shape')
+        #self.sys_shift_nonres_wlnu_loose = rl.NuisanceParameter(f'CMS_nonresonance_shift_wlnu_loose_{cat}', 'shape')
+        # self.sys_smear_nonres_wlnu_fail = rl.NuisanceParameter('CMS_nonresonance_smear_wlnu_fail', 'shape')
+        # self.sys_shift_nonres_wlnu_fail = rl.NuisanceParameter('CMS_nonresonance_shift_wlnu_fail', 'shape')
+
         # self.qcd_lowmass = rl.NuisanceParameter(f"qcd_lowmass_bin_{cat}", "shape")
         # self.qcd_lowmass_top = rl.NuisanceParameter(f"qcd_lowmass_top_bin_{cat}", "shape")
         # self.qcd_lowmass_wlnu = rl.NuisanceParameter(f"qcd_lowmass_wlnu_bin_{cat}", "shape")
@@ -590,43 +642,94 @@ class Cards:
             mrebin = rebin
         )
 
-    def _events(self, template, singlebin=False, clip=True):
+    def _events(self, template, singlebin=False, clip=True, sample=None, analysis_region=None, rebin=False):
         """
         Get numpy array of event yields
+        template = ( events_array, bin_edges_or_binning, axis_name, sumw_array )
         """
-        templ = template[0][self.lowbin : self.highbin]
+        # 1) Extract events from 'template' ( index 0 )
+        # 2) If needed, parse out binning so we can compute bin centers
+        #    The second entry of template is the binning/edges, e.g. array of edges
+        if rebin: 
+            templ = template[0][self.lowbin_rebin : self.highbin_rebin]
+            bin_edges = self.mttbins_nom_rebin
+        else: 
+            print("TEMPLATE", template) 
+            templ = template[0][self.lowbin : self.highbin]
+            bin_edges = self.mttbins_nom
+
+        #bin_edges = np.array([20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 250, 300, 350])
+
+        # 3) If this sample is something like "phitt200", parse out the mass and apply the +/-50 cut
+        if str(sample) and "phitt" in (str(sample)):
+            # Attempt to parse the integer mass from sample name, e.g. "phitt200" -> 200
+            # Adjust the parsing logic to match your exact naming convention
+                
+            try:
+                mass_str = str(sample).replace("phitt", "")
+                mass_val = int(mass_str)
+            except ValueError:
+                # Fallback mass or skip if parsing fails
+                mass_val = 200
+
+            # For each bin, check if the bin center is outside [mass_val-50, mass_val+50]
+            for i in range(len(templ)):
+                # The bin center = (edge_i + edge_{i+1}) / 2
+                # Make sure i+1 is valid for the last bin
+                if i < len(bin_edges) - 1:
+                    bin_center = 0.5 * (bin_edges[i] + bin_edges[i+1])
+                    if abs(bin_center - mass_val) > 50:
+                        templ[i] = 0.0
+        if ("phitt" in str(sample)) and ("CR" in str(analysis_region)):
+            # Zero out all bins
+            templ[:] = 0.0
+        
+        # 4) If singlebin, combine all bins into a single sum after zeroing
         if singlebin:
             templ = np.array([np.sum(templ)])
+
+        #print("TEMPLATE", templ)
+
+        # 5) Clip negative yields to 0 (floating-point roundings, etc.)
         if clip:
             templ = np.clip(templ, 0.0, None)
-        # remove negative events
         for iv, val in enumerate(templ):
             if val < 0.0:
                 templ[iv] = 0.0
+        
+        #print("TEMPLATE POST CLIP", templ)
         return templ
 
-    def _sumw(self, template, singlebin=False):
+    def _sumw(self, template, singlebin=False, rebin=False):
         """
         Get sum of weights
         """
-        templ = template[1][self.lowbin : self.highbin]
+        if rebin: 
+            templ = template[1][self.lowbin_rebin : self.highbin_rebin]
+        else: 
+            templ = template[1][self.lowbin : self.highbin]
         if singlebin:
             templ = np.array([np.sum(templ)])
         return templ
 
-    def get_template(self, h, region, syst, singlebin, rebin, debug, clip=True):
+    def get_template(self, h, region, syst, singlebin, rebin, debug, sample, analysis_region, clip=True):
         """
         Get template ntuple
         """
         tempint = self._get_region(h, region, syst, debug, rebin=rebin)
-        events = self._events(tempint, singlebin, clip)
-        sumw = self._sumw(tempint, singlebin)
+        events = self._events(tempint, singlebin, clip, sample, analysis_region,rebin)
+        sumw   = self._sumw(tempint, singlebin, rebin)
+        print(events)
+        print(self.mttrebin.binning)
+        print(self.mttrebin.name)
+        print(sumw)
         template = (
             events,
             (self.mttone.binning if singlebin else (self.mttrebin.binning if rebin else self.mtt.binning)),
-            (self.mttone.name if singlebin else (self.mttrebin.binning if rebin else self.mtt.name)),
+            (self.mttone.name if singlebin else (self.mttrebin.name if rebin else self.mtt.name)),
             sumw,
         )
+        
         return template, events
     
 
@@ -760,27 +863,54 @@ class Cards:
             # )
         
 
-        smear_syst=True
+        smear_syst_res=True
+        smear_syst_nonres=True
 
-        if smear_syst and sample.name not in ['top', 'multijet', 'wlnu', 'data_obs']:
+        if singlebin: # these dont work in singlebin of course
+            smear_syst_res=False
+            smear_syst_nonres=False
+
+        if smear_syst_res and sample.name not in ['top', 'multijet', 'wlnu', 'data_obs']:
             mtempl = MorphHistW2(template_nonrl)
-            _up = mtempl.get(smear=1 + 0.20)
-            _down = mtempl.get(smear=1 - 0.20)
+            _up = mtempl.get(smear=1 + 0.18)
+            _down = mtempl.get(smear=1 - 0.18)
             syst_template.setParamEffect(self.sys_smear, _up[:-1], _down[:-1], scale=1)
 
-            _up = mtempl.get(shift = 2)
-            _down = mtempl.get(shift = -2)
+            _up = mtempl.get(shift = 1.7)
+            _down = mtempl.get(shift = -1.7)
             syst_template.setParamEffect(self.sys_shift, _up[:-1], _down[:-1], scale=1)
-        
-        if smear_syst and sample.name in ['top', 'wlnu']:
-            mtempl = MorphHistW2(template_nonrl)
-            _up = mtempl.get(smear=1 + 0.20)
-            _down = mtempl.get(smear=1 - 0.20)
-            syst_template.setParamEffect(self.sys_smear_nonres, _up[:-1], _down[:-1], scale=1)
+         
+        if smear_syst_nonres and sample.name in ['top', 'wlnu']:
+            print(sample_template.name)
+            # if "wlnuCR" in sample_template.name and "loose" in sample_template.name: 
+            #     mtempl = MorphHistW2(template_nonrl)
+            #     _up = mtempl.get(smear=1 + 0.18)
+            #     _down = mtempl.get(smear=1 - 0.18)
+            #     syst_template.setParamEffect(self.sys_smear_nonres_wlnu_loose, _up[:-1], _down[:-1], scale=1)
 
-            _up = mtempl.get(shift = 2)
-            _down = mtempl.get(shift = -2)
-            syst_template.setParamEffect(self.sys_shift_nonres, _up[:-1], _down[:-1], scale=1)
+            #     _up = mtempl.get(shift = 1.7)
+            #     _down = mtempl.get(shift = -1.7)
+            #     syst_template.setParamEffect(self.sys_shift_nonres_wlnu_loose, _up[:-1], _down[:-1], scale=1)
+            
+            #if "wlnuCR" in sample_template.name and "pass" in sample_template.name: 
+            if "wlnuCR" in sample_template.name:
+                mtempl = MorphHistW2(template_nonrl)
+                _up = mtempl.get(smear=1 + 0.18)
+                _down = mtempl.get(smear=1 - 0.18)
+                syst_template.setParamEffect(self.sys_smear_nonres_wlnu, _up[:-1], _down[:-1], scale=1)
+
+                _up = mtempl.get(shift = 1.7)
+                _down = mtempl.get(shift = -1.7)
+                syst_template.setParamEffect(self.sys_shift_nonres_wlnu, _up[:-1], _down[:-1], scale=1)
+            else:
+                mtempl = MorphHistW2(template_nonrl)
+                _up = mtempl.get(smear=1 + 0.18)
+                _down = mtempl.get(smear=1 - 0.18)
+                syst_template.setParamEffect(self.sys_smear_nonres, _up[:-1], _down[:-1], scale=1)
+
+                _up = mtempl.get(shift = 1.7)
+                _down = mtempl.get(shift = -1.7)
+                syst_template.setParamEffect(self.sys_shift_nonres, _up[:-1], _down[:-1], scale=1)
 
         return syst_template
 
@@ -816,9 +946,10 @@ class Cards:
                 )
                 syst_template.setParamEffect(
                     nuisance,
-                    np.array([np.sum(up_var)]) if singlebin else up_var,
-                    np.array([np.sum(dn_var)]) if singlebin else dn_var,
+                    np.array([np.mean(up_var)]) if singlebin else up_var,
+                    np.array([np.mean(dn_var)]) if singlebin else dn_var,
                 )
+                print("systs_shape",[np.mean(up_var)], [np.mean(dn_var)] )
 
             if sample.name == "top":
                 nuisance, syst_dn, syst_up = rl.NuisanceParameter("toppt", "shape"), "nominal", "TopPtReweightUp"
@@ -843,6 +974,7 @@ class Cards:
                 #     np.array([np.sum(up_var)]) if singlebin else up_var,
                 #     np.array([np.sum(dn_var)]) if singlebin else dn_var,
                 # )
+
         #print(syst_template)
         #print('syst template')
         return syst_template
@@ -855,9 +987,35 @@ class Cards:
         cat = self.__name
         syst_template = sample_template
 
+        # if sample.name == "top" and  "wlnuCR" in analysis_region:
+        #     syst_template.setParamEffect(
+        #         self.syst_dict["CMS_top_norm_wlnuCR"], 1.20
+        #     ) 
+        #     if not singlebin:
+        #         for imx in range(len(self.top_highmass)):
+        #             syst_template.setParamEffect(
+        #                 self.top_highmass[imx],
+        #                 np.array(
+        #                     [
+        #                         1.0 - self.highbkgincrease
+        #                         if ix == imx + self.highmassx
+        #                         else 1.0
+        #                         for ix in range(len(events))
+        #                     ]
+        #                 ),
+        #                 np.array(
+        #                     [
+        #                         1.0 + self.highbkgincrease
+        #                         if ix == imx + self.highmassx
+        #                         else 1.0
+        #                         for ix in range(len(events))
+        #                     ]
+        #                 ),
+        #             )
+
         if sample.name == "top":
             syst_template.setParamEffect(
-                self.syst_dict["CMS_top_norm"], 1.10
+                self.syst_dict["CMS_top_norm"], 1.2
             )
             if not singlebin:
                 for imx in range(len(self.top_highmass)):
@@ -881,10 +1039,40 @@ class Cards:
                         ),
                     )
                 
+        # if sample.name == "wlnu" and "topCR" in analysis_region:
+        #     syst_template.setParamEffect(
+        #         self.syst_dict["CMS_wlnu_norm_topCR"], 1.20
+        #     )
+        #     if not singlebin:
+        #         for imx in range(len(self.wlnu_highmass)):
+        #             syst_template.setParamEffect(
+        #                 self.wlnu_highmass[imx],
+        #                 np.array(
+        #                     [
+        #                         1.0 - self.highbkgincrease
+        #                         if ix == imx + self.highmassx
+        #                         else 1.0
+        #                         for ix in range(len(events))
+        #                     ]
+        #                 ),
+        #                 np.array(
+        #                     [
+        #                         1.0 + self.highbkgincrease
+        #                         if ix == imx + self.highmassx
+        #                         else 1.0
+        #                         for ix in range(len(events))
+        #                     ]
+        #                 ),
+        #             )
+
         if sample.name == "wlnu":
             syst_template.setParamEffect(
-                self.syst_dict["CMS_wlnu_norm"], 1.10
+                self.syst_dict["CMS_wlnu_norm"], 1.2
             )
+            # syst_template.setParamEffect(
+            #     self.wlnu_norm, 1 * self.wlnu_norm
+            # )
+            
             if not singlebin:
                 for imx in range(len(self.wlnu_highmass)):
                     syst_template.setParamEffect(
@@ -918,11 +1106,11 @@ class Cards:
 
         if sample.name == "vvqq":
             syst_template.setParamEffect(
-                self.syst_dict["CMS_vvqq_norm"], 1.20
+                self.syst_dict["CMS_vvqq_norm"], 1.14
             )
         if sample.name == "dy":
             syst_template.setParamEffect(
-                self.syst_dict["CMS_dy_norm"], 1.05
+                self.syst_dict["CMS_dy_norm"], 1.14
             )
 
 
@@ -1003,21 +1191,60 @@ class Cards:
                         sym_up[i] = 1.0 + min_fluct
                     return sym_dn, sym_up
                 
+                def capNegativeBinsAtZero(histo_array):
+                    """Sets all negative entries in the numpy array to zero."""
+                    histo_array[histo_array < 0] = 0
+
+                # Example usage:
+                #capNegativeBinsAtZero(qcd_shape_dn_1)
+                #capNegativeBinsAtZero(qcd_shape_up_1)
+                #capNegativeBinsAtZero(qcd_shape_dn_2)
+                #capNegativeBinsAtZero(qcd_shape_up_2)
+
                 symmetrized_dn_1, symmetrized_up_1 = symmetrize_binwise(qcd_shape_dn_1, qcd_shape_up_1)
                 symmetrized_dn_2, symmetrized_up_2 = symmetrize_binwise(qcd_shape_dn_2, qcd_shape_up_2)
                 
-                qcd_nuisance_1 = {
-                    "pass": self.qcd_pass_1,
-                    "loosepass": self.qcd_loosepass_1,
-                    "fail": self.qcd_fail_1,
-                }[region]
+                #symmetrized_dn_1, symmetrized_up_1 = qcd_shape_dn_1, qcd_shape_up_1
+                #symmetrized_dn_2, symmetrized_up_2 = qcd_shape_dn_2, qcd_shape_up_2
+                
+                if analysis_region == "SR":
+                    qcd_nuisance_1 = {
+                        "pass": self.qcd_pass_1,
+                        "loosepass": self.qcd_loosepass_1,
+                        "fail": self.qcd_fail_1,
+                    }[region]
 
-                qcd_nuisance_2 = {
-                    "pass": self.qcd_pass_2,
-                    "loosepass": self.qcd_loosepass_2,
-                    "fail": self.qcd_fail_2,
-                }[region]
+                    qcd_nuisance_2 = {
+                        "pass": self.qcd_pass_2,
+                        "loosepass": self.qcd_loosepass_2,
+                        "fail": self.qcd_fail_2,
+                    }[region]
+                
+                elif analysis_region == "wlnuCR":
+                    qcd_nuisance_1 = {
+                        "pass": self.qcd_pass_1_wlnu,
+                        "loosepass": self.qcd_loosepass_1_wlnu,
+                        "fail": self.qcd_fail_1_wlnu,
+                    }[region]
 
+                    qcd_nuisance_2 = {
+                        "pass": self.qcd_pass_2_wlnu,
+                        "loosepass": self.qcd_loosepass_2_wlnu,
+                        "fail": self.qcd_fail_2_wlnu,
+                    }[region]
+                
+                elif analysis_region == "topCR":
+                    qcd_nuisance_1 = {
+                        "pass": self.qcd_pass_1_top,
+                        "loosepass": self.qcd_loosepass_1_top,
+                        "fail": self.qcd_fail_1_top,
+                    }[region]
+
+                    qcd_nuisance_2 = {
+                        "pass": self.qcd_pass_2_top,
+                        "loosepass": self.qcd_loosepass_2_top,
+                        "fail": self.qcd_fail_2_top,
+                    }[region]
                 # syst_template.setParamEffect(
                 #     qcd_nuisance_1,
                 #     np.minimum(qcd_shape_dn_1, qcd_shape_up_1),
@@ -1029,75 +1256,114 @@ class Cards:
                 #     np.minimum(qcd_shape_dn_2, qcd_shape_up_2),
                 #     np.maximum(qcd_shape_dn_2, qcd_shape_up_2),
                 # )
-                
-                syst_template.setParamEffect(
+            
+                if self.islephad:
+                    if self.year == "2016APV":
+                        if self.ishadel: scale_lephad = 0.20
+                        elif self.ishadmu: scale_lephad = 0.12
+                    else:
+                        if self.ishadel: scale_lephad = 0.25
+                        elif self.ishadmu: scale_lephad = 0.25
+
+                    syst_template.setParamEffect(
                     qcd_nuisance_1,
                     qcd_shape_dn_1,
-                    qcd_shape_up_1, scale=0.25
-                )
+                    qcd_shape_up_1, scale=scale_lephad
+                    )
+                    syst_template.setParamEffect(
+                        qcd_nuisance_2,
+                        qcd_shape_dn_2,
+                        qcd_shape_up_2, scale=scale_lephad
+                    )
+                
+                else:
+                    if self.year == "2016APV":
+                        scale_hadhad = 0.20
+                    else:
+                        scale_hadhad = 0.30
+                    syst_template.setParamEffect(
+                        qcd_nuisance_1,
+                        qcd_shape_dn_1,
+                        qcd_shape_up_1, scale=scale_hadhad
+                    )
 
-                syst_template.setParamEffect(
-                    qcd_nuisance_2,
-                    qcd_shape_dn_2,
-                    qcd_shape_up_2, scale=0.25
-                )
+                    syst_template.setParamEffect(
+                        qcd_nuisance_2,
+                        qcd_shape_dn_2,
+                        qcd_shape_up_2, scale=scale_hadhad
+                    )
+                
+                if self.islephad:
+                    if self.year == "2016APV":
+                        if self.ishadel: qcd_scale_lowmass = 0.8
+                        elif self.ishadmu: qcd_scale_lowmass = 0.5
+                    else:
+                        if self.ishadel: qcd_scale_lowmass = 1.2
+                        elif self.ishadmu: qcd_scale_lowmass = 1.2
+                else:
+                    if self.year == "2016APV":
+                        qcd_scale_lowmass = 0.8
+                    else:
+                        qcd_scale_lowmass = 1
+    
                 if analysis_region == 'topCR':
                     if self.lowmass_combined:
                         syst_template.setParamEffect(self.qcd_lowmass_top_1[0],
-                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                         
                         syst_template.setParamEffect(self.qcd_lowmass_top_2[0],
-                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                     else: 
                         for imx in range(len(self.qcd_lowmass_top_1)):
                             syst_template.setParamEffect(self.qcd_lowmass_top_1[imx],
-                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                         
                         for imx in range(len(self.qcd_lowmass_top_2)):
                             syst_template.setParamEffect(self.qcd_lowmass_top_2[imx],
-                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                 elif analysis_region == 'wlnuCR':
                     if self.lowmass_combined:
                         syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[0], 
-                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                         
                         syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[0],
-                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                     else:
                         for imx in range(len(self.qcd_lowmass_wlnu_1)):
                             syst_template.setParamEffect(self.qcd_lowmass_wlnu_1[imx], 
-                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
+                       
                         
                         for imx in range(len(self.qcd_lowmass_wlnu_2)):
                             syst_template.setParamEffect(self.qcd_lowmass_wlnu_2[imx],
-                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))        
+                                                        np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)        
                 elif analysis_region == 'SR':
                     if self.lowmass_combined:
                         syst_template.setParamEffect(self.qcd_lowmass_1[0],
-                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_1[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
 
                         syst_template.setParamEffect(self.qcd_lowmass_2[0],
-                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]),
-                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))]))
+                                                        np.array([symmetrized_dn_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                        np.array([symmetrized_up_2[ix] if ix <= 3 else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
                     else:
                         for imx in range(len(self.qcd_lowmass_1)):
                             syst_template.setParamEffect(self.qcd_lowmass_1[imx],
-                                                    np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                    np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]))
+                                                    np.array([symmetrized_dn_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                    np.array([symmetrized_up_1[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass)
 
                         for imx in range(len(self.qcd_lowmass_2)):
                             syst_template.setParamEffect(self.qcd_lowmass_2[imx],
-                                                    np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))]),
-                                                    np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])) 
+                                                    np.array([symmetrized_dn_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass,
+                                                    np.array([symmetrized_up_2[imx] if ix == imx else 1.0 for ix in range(len(qcd['nom']))])*qcd_scale_lowmass) 
 
 
                 # for imx in range(len(self.qcd_lowmass_top)):
@@ -1188,7 +1454,7 @@ class Cards:
             # get template from that MC/data sample
             h = hchannel[sample]
             template, events = self.get_template(
-                h, region, "nominal", singlebin, rebin, debug, clip=True
+                h, region, "nominal", singlebin, rebin, debug, sample, analysis_region, clip=True,
             )
 
             # if the sample is multijet(QDC) take "qcd" i.e. the prediction from data
@@ -1215,6 +1481,7 @@ class Cards:
             else:
                 print(template)
                 print(sample.name)
+                
                 sample_template = rl.TemplateSample(
                     f"{ch.name}_{sample.name}",
                     rl.Sample.SIGNAL
@@ -1225,8 +1492,13 @@ class Cards:
 
             
                 # MAYBE add in automcstats soon? 
+                # if not self.islephad:
+                #     if 'multijet' not in sample.name:
+                #         sample_template.autoMCStats(epsilon=1e-4, lnN=False)
+
+                # per sample MC stats
                 # if 'multijet' not in sample.name:
-                #     sample_template.autoMCStats(epsilon=1e-4, lnN=False)
+                #    sample_template.autoMCStats(epsilon=1e-4, lnN=False)
 
 
                 # shape systematics
@@ -1244,9 +1516,14 @@ class Cards:
                 # QCD norm SF
                 if sample.name == "multijet" and qcdnormSF is not None:
                     sample_template.setParamEffect(qcdnormSF, 1 * qcdnormSF)
+                print(sample_template)
+                print(vars(sample_template))
+                for attr in dir(sample_template):
+                    print(attr, getattr(sample_template, attr))
 
                 # add sample
                 ch.addSample(sample_template)
+
 
         # blind signal region
         if not unblind and region == "pass" and analysis_region == "SR":
@@ -1259,13 +1536,20 @@ class Cards:
                     self.mttone.name if singlebin else self.mtt.name,
                 )
             )
+        # if self.islephad:
+        #      ch.autoMCStats(epsilon=1e-4, threshold=1)
+        #      ch.autoMCStats(epsilon=1e-4)
+
         ch.autoMCStats(epsilon=1e-4, threshold=1)
         #ch.autoMCStats(epsilon=1e-4)
 
-
         #masking 
-        # if analysis_region == 'wlnuCR' and region == "fail":
-        #     mask = np.array([False, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True])
+        # if analysis_region == 'topCR' and region == "pass" and self.ishadel and self.year=='2017':
+        #    mask = np.array([True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True])
+        #    ch.mask = mask
+        
+        # if analysis_region == 'SR' and region == "fail" and self.ishadel and self.year=='2016APV':
+        #     mask = np.array([True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, True, False])
         #     ch.mask = mask
         
         # if analysis_region == 'wlnuCR' and region == "pass":
@@ -1275,7 +1559,9 @@ class Cards:
         # if analysis_region == 'topCR' and region == "pass":
         #     mask = np.array([True, True, True, False, True, True, True, True, True, True, True, True, True, True, True, True, True])
         #     ch.mask = mask
-    
+        # f analysis_region == 'SR':
+        #     mask = np.array([True, True, True, True, True, True, True, True, True, True, True, True, True, True, False, False, False])
+        #     ch.mask = mask
         # add channel
         self.model.addChannel(ch)
         
@@ -1313,7 +1599,8 @@ class Cards:
             )
 
         else: 
-            self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
+            #self.model[str_pass]["top"].setParamEffect(self.topLeffSF, 1 * self.topLeffSF)
+            #self.model[str_pass]["top"].scale(self.topLeffSF)
             self.model[str_loose]["top"].setParamEffect(
                 self.topLeffSF, (1 - self.topLeffSF) * topLPF + 1
             )
@@ -1351,9 +1638,8 @@ class Cards:
 
         else:
 
-            self.model[str_pass]["wlnu"].setParamEffect(
-            self.wlnuLeffSF, 1 * self.wlnuLeffSF
-            )
+            #self.model[str_pass]["wlnu"].setParamEffect(self.wlnuLeffSF, 1 * self.wlnuLeffSF)
+            #self.model[str_pass]["wlnu"].scale(self.wlnuLeffSF)
             self.model[str_loose]["wlnu"].setParamEffect(
                 self.wlnuLeffSF, (1 - self.wlnuLeffSF) * wlnuLPF + 1
             )
@@ -1369,17 +1655,18 @@ class Cards:
             self.model[str_pass]["dy"].getExpectation(nominal=True).sum()
             / self.model[str_loose]["dy"].getExpectation(nominal=True).sum()
         )
-        self.model[str_pass]["dy"].setParamEffect(self.dy_eff, 1 * self.dy_eff)
-        self.model[str_loose]["dy"].setParamEffect(
-            self.dy_eff, (1 - self.dy_eff) * dyLP + 1
-        )
+        if dyLP > 0.1:
+            self.model[str_pass]["dy"].setParamEffect(self.dy_eff, 1 * self.dy_eff)
+            self.model[str_loose]["dy"].setParamEffect(
+                self.dy_eff, (1 - self.dy_eff) * dyLP + 1
+            )
 
-        # htt
-        httLP = (
-            self.model[str_pass]["htt125"].getExpectation(nominal=True).sum()
-            / self.model[str_loose]["htt125"].getExpectation(nominal=True).sum()
-        )
-        self.model[str_pass]["htt125"].setParamEffect(self.dy_eff, 1 * self.dy_eff)
+            # htt
+            httLP = (
+                self.model[str_pass]["htt125"].getExpectation(nominal=True).sum()
+                / self.model[str_loose]["htt125"].getExpectation(nominal=True).sum()
+            )
+            self.model[str_pass]["htt125"].setParamEffect(self.dy_eff, 1 * self.dy_eff)
         # self.model[str_loose]["htt125"].setParamEffect(
         #     self.dy_eff, (1 - self.dy_eff) * httLP + 1
         # )

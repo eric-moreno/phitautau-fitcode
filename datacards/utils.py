@@ -1,7 +1,8 @@
 from hists_map import *
 import numpy as np
 import logging
-from coffea import hist
+from coffea import hist 
+import hist as histhist
 
 def intRegion(
     inhist: hist.Hist,
@@ -19,6 +20,13 @@ def intRegion(
     Return result of integrating over nnCuts.
     If there is a mass slice (mslice) also integrate over mass.
     """
+    print("intRegion")
+    print("theregion", theregion)
+    print("nnCut", nnCut)
+    print("nnCut_loose", nnCut_loose)
+    print("nnCut_fail", nnCut_fail)
+    print("systematic", systematic)
+    print("samplelist", samplelist)
     # slice on nn
     if theregion == "pass":
         theslice = slice(nnCut, None)
@@ -36,7 +44,7 @@ def intRegion(
         "systematic", systematic
     )
     #print('THE INT', the_int)
-    if debug:
+    if True:
         print("nn slice ", theslice, "nn ", nnCut, " l ", nnCut_loose)
         print("overflow ", overflow_str, the_int.values())
 
@@ -80,15 +88,44 @@ def intRegion(
     if samplelist is not None:
         the_int = the_int.integrate("sample", samplelist).values(sumw2=True)[()]
     else:
+        print("No samplelist provided, summing over all samples")
         the_int = the_int.sum("sample").values(sumw2=True)
+        print("the_int", the_int)
         if () in the_int:
             the_int = the_int[()]
         else:
-            the_int = np.zeros(len(mttbins) - 1, dtype=np.float32)
+            mttbins = np.array(
+            [
+                0.0,
+                10.0,
+                20.0,
+                30.0,
+                40.0,
+                50.0,
+                60.0,
+                70.0,
+                80.0,
+                90.0,
+                100.0,
+                110.0,
+                120.0,
+                130.0,
+                140.0,
+                150.0,
+                200.0,
+                250.0,
+                300.0,
+                350.0,
+                400.0,
+            ]
+             )   
+            #the_int = np.zeros(len(the_int), dtype=np.float32)
+            the_int = (np.array([np.zeros(len(mttbins) - 1, dtype=np.float32)]))
     #print(the_int)
     if debug:
         print("debug", the_int)
     logging.debug(f"After integrating: {the_int}")
+    print(the_int)
     return the_int
 
 
@@ -399,6 +436,7 @@ def getHist(
     :param blind:
     :param sigscale:
     :param rebin:
+
     """
     if debug:
         print(h)
@@ -453,9 +491,15 @@ def getHist(
 
     if len(rebin) == 1:
         if rebin[0] > 1:
+            print(rebin)
             x = x.rebin(xaxis, int(rebin[0]))
     else:
+        # print("REBIN WTF")
+        # print(rebin)
+        # print('REBINNNNN')
+        # sys.exit()
         x = x.rebin(xaxis, hist.Bin(xaxis, var_name, rebin))
+    
 
     x_nobkg = x[nobkg]
     x_nosig = x[nosig]
@@ -470,3 +514,60 @@ def getHist(
     x_data = x["data"]
 
     return x_nobkg + x_nosig + x_data
+
+
+def coffea_to_hist(coffea_h, axis_name="massreg"):
+    """
+    Convert a 1D coffea histogram (with Weighted storage)
+    into a hist.Hist object (boost-histogram-based).
+    """
+    # 1. Extract bin edges from the coffea axis
+    edges = coffea_h.axis(axis_name).edges()
+
+    # 2. Create an equivalent hist.Hist (with weight storage)
+    h = histhist.Hist(
+        hist.axis.Variable(edges),  # or Regular(...) if uniform
+        storage=hist.storage.Weight()
+    )
+
+    # 3. Sum over any extra axes you don’t care about, e.g. "process"
+    #    so that we're left with only the 1D axis.
+    #    If you want to keep each process separate, you'd handle that differently.
+    h_vals, h_vars = coffea_h.sum("process").values(sumw2=True)[()]  # 1D array
+
+    # 4. Assign values and variances directly into the hist.Hist storage
+    #    hist.Hist exposes a .view(flow=True/False) which gives you a buffer
+    #    you can write to. For a 1D histogram, you can do:
+    h.view(flow=False).value = h_vals
+    h.view(flow=False).variance = h_vars
+
+    return h
+
+def hist_to_coffea(h_boost, axis_name="massreg"):
+    """
+    Convert a 1D hist.Hist (Weight storage)
+    back into a coffea.hist.Hist.
+    """
+
+    # 1. Extract the edges from the hist.Hist
+    edges = h_boost.axes[0].edges  # for a 1D hist, there's only one axis
+
+    # 2. Create a new coffea histogram with these edges
+    coffea_h = hist.Hist(
+        "Events",
+        hist.Bin(axis_name, axis_name, edges),
+    )
+    # By default, coffea uses arrays under the hood for ._sumw and ._sumw2
+
+    # 3. Pull out values and variances from h_boost
+    #    For 1D, h_boost.view(flow=False) is a 1D storage buffer
+    vals = h_boost.view(flow=False).value
+    vars = h_boost.view(flow=False).variance
+
+    # 4. Assign them into coffea's internal arrays
+    #    Typically, coffea uses some internal indexing, but for a plain 1D:
+    for i in range(len(vals)):
+        coffea_h._sumw[()][i] = vals[i]
+        coffea_h._sumw2[()][i] = vars[i]
+
+    return coffea_h

@@ -74,8 +74,19 @@ def reloadPkl(args):
                             othermodel = pickle.load(open("%s/%s/%s.pkl"%(args.indir,args.outdir[iod],om), "rb"))
                             for c in othermodel:
                                 model.addChannel(othermodel[c.name])
-                model._name = 'fullModel'
+                
+                if '2016APV' in args.outdir:
+                    year = '2016APV'
+                elif '2016' in args.outdir:
+                    year = '2016'
+                elif '2017' in args.outdir:
+                    year = '2017'
+                elif '2018' in args.outdir:
+                    year = '2018'
             
+                model._name = 'fullModel'+str(year)
+                #model._name = 'fullModel'
+
             # Change the axis name
             #change_axis_name(model)
 
@@ -142,37 +153,96 @@ def reloadPkl(args):
             #    os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -1 --rMax 5 --robustFit 1 --doInitialFit --expectSignal %s -t -1 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,args.outdir,m,mass))
             #    os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -1 --rMax 5 --robustFit 1 --doFits --expectSignal %s -t -1 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,args.outdir,m,mass))
             #    os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -1 --rMax 5 --robustFit 1 --output impacts_m%s.json --expectSignal %s -t -1 %s %s >> %s/%s_m%s/build.sh"%(m,mass,mass,args.expsig,args.addargs,maskstr,args.outdir,m,mass))
-
-            os.system("echo combine -M %s %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(args.mode,m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
-
+            
+            os.system("echo combine -M %s %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s -n .%s -v 0 %s %s >> %s/%s_m%s/build.sh"%(args.mode,m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
             if args.full:
                 print('hi')
-                os.system("echo combine -M FitDiagnostics %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s --saveShapes --robustFit 1 --saveWithUncertainties -n .%s -v 3 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
-                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doInitialFit --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doFits --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                # os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --output impacts_m%s.json --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
-                # os.system("echo plotImpacts.py -i impacts_m%s.json -o impacts_%s >> %s/%s_m%s/build.sh"%(mass,m,outdirname,m,mass))
-            #     # #need to use \# not # for making comments
+                os.system("echo combine -M FitDiagnostics %s_combined.root -m %s --rMin -50 --rMax 50 --expectSignal %s --robustFit 1 --saveShapes --saveWithUncertainties  -n .%s -v 1 %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,m,args.addargs,maskstr,outdirname,m,mass))
+                
+                # combine is buggy now?  have to do this in two steps
+                # os.system(
+                #     "echo combine -M FitDiagnostics %s_combined.root "
+                #     "-m %s --expectSignal %s --saveWorkspace "
+                #     "--saveShapes --saveWithUncertainties "
+                #     "-n .%s_prefit -v 3 %s "
+                #     ">> %s/%s_m%s/build.sh"
+                #     % (m, mass, args.expsig, m, maskstr,
+                #     outdirname, m, mass)
+                # )
+
+                # # 2) stat-only fit using the snapshot and freezing everything
+                # os.system(
+                #     "echo combine -M FitDiagnostics "
+                #     "higgsCombine.%s_prefit.FitDiagnostics.mH%s.root "
+                #     "-m %s --snapshotName fit_s "
+                #     "--expectSignal %s "
+                #     "--saveShapes --saveWithUncertainties "
+                #     "-n .%s_statOnly -v 3 %s %s "
+                #     ">> %s/%s_m%s/build.sh"
+                #     % (m, mass, mass, args.expsig, m, args.addargs, maskstr,
+                #     outdirname, m, mass))
+                
+                #FREEZE MCSTATS
+                #os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doInitialFit  --freezeParameters rgx{.*mcstat.*} --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+                #os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doFits --freezeParameters rgx{.*mcstat.*} --job-mode interactive --parallel 8 --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+
+                # Without freezing MCSTATS
+            #     os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doInitialFit --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+            #     os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --doFits --job-mode interactive --parallel 8 --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+            #     os.system("echo combineTool.py -M Impacts -d %s_combined.root -m %s --rMin -50 --rMax 50 --robustFit 1 --output impacts_m%s.json --expectSignal %s %s %s >> %s/%s_m%s/build.sh"%(m,mass,mass,args.expsig,args.addargs,maskstr,outdirname,m,mass))
+            #     os.system("echo plotImpacts.py -i impacts_m%s.json -o impacts_%s >> %s/%s_m%s/build.sh"%(mass,m,outdirname,m,mass))
+            # #     # #need to use \# not # for making comments
             
             # # # Saturated GoF tests
-            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh"%(m,mass,m[:-5],year,m[:-5],year,m[:-5],year,outdirname,m,mass))
             os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly_data --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 >> %s/%s_m%s/build_gof.sh"%(m,mass,m[:-5],year,m[:-5],year,m[:-5],year,outdirname,m,mass))
-            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_sb -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh"%(m,mass,outdirname,m,mass))
+            #os.system("echo combineTool.py -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 -t 120 --toysFrequentist --job-mode interactive --parallel 5 -s 1:5:1 >> %s/%s_m%s/build_gof.sh"%(m,mass,m[:-5],year,m[:-5],year,m[:-5],year,outdirname,m,mass))
+            #os.system("echo hadd higgsCombine_result_bonly_CRonly.GoodnessOfFit.mH%s.123456.root higgsCombine_result_bonly_CRonly.GoodnessOfFit.mH%s.\\*.root >> %s/%s_m%s/build_gof.sh"%(mass, mass, outdirname,m,mass))
+            #os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_bonly_CRonly_data --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 >> %s/%s_m%s/build_gof.sh"%(m,mass,m[:-5],year,m[:-5],year,m[:-5],year,outdirname,m,mass))
+            os.system("echo combineTool.py -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_sb -t 100 --toysFrequentist --job-mode interactive --parallel 5 -s 1:5:1 >> %s/%s_m%s/build_gof.sh"%(m,mass,outdirname,m,mass))
+            os.system("echo hadd -f higgsCombine_result_sb.GoodnessOfFit.mH%s.123456.root higgsCombine_result_sb.GoodnessOfFit.mH%s.\\*.root >> %s/%s_m%s/build_gof.sh"%(mass, mass, outdirname,m,mass))
             os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=saturated -n _result_sb_data >> %s/%s_m%s/build_gof.sh"%(m,mass,outdirname,m,mass))
-            os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_bonly_CRonly_data.GoodnessOfFit.mH%s.root higgsCombine_result_bonly_CRonly.GoodnessOfFit.mH%s.123456.root -m %s -o gof_CRonly.json >> %s/%s_m%s/build_gof.sh"%(mass,mass,mass,outdirname,m,mass))
+            #os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_bonly_CRonly_data.GoodnessOfFit.mH%s.root higgsCombine_result_bonly_CRonly.GoodnessOfFit.mH%s.123456.root -m %s -o gof_CRonly.json >> %s/%s_m%s/build_gof.sh"%(mass,mass,mass,outdirname,m,mass))
             os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_sb_data.GoodnessOfFit.mH%s.root higgsCombine_result_sb.GoodnessOfFit.mH%s.123456.root -m %s -o gof.json >> %s/%s_m%s/build_gof.sh"%(mass,mass,mass,outdirname,m,mass))
-            os.system("echo plotGof.py gof_CRonly.json --statistic saturated --mass %s.0 -o gof_plot_CRonly --title-right='%s_%s_CRonly' >> %s/%s_m%s/build_gof.sh"%(mass,m,year,outdirname,m,mass))
+            #os.system("echo plotGof.py gof_CRonly.json --statistic saturated --mass %s.0 -o gof_plot_CRonly --title-right='%s_%s_CRonly' >> %s/%s_m%s/build_gof.sh"%(mass,m,year,outdirname,m,mass))
             os.system("echo plotGof.py gof.json --statistic saturated --mass %s.0 -o gof_plot --title-right='%s_%s' >> %s/%s_m%s/build_gof.sh"%(mass,m,year,outdirname,m,mass))
             
-            # # # KS GoF tests
-            # os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh" % (m,mass,m[:-5],year,m[:-5],year,m[:-5], year, outdirname, m, mass))
-            # os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_data_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 >> %s/%s_m%s/build_gof.sh" % (m, mass,m[:-5],year,m[:-5],year,m[:-5], year, outdirname, m, mass))
-            # os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_KS -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+
+            # --- KS, parallelized with combineTool.py ---
+            # (1) observed data (SB)
             # os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_data_KS >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+
+            # # (2) toys: CR-only, B-only
+            # os.system("echo combineTool.py -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 -t 1 --toysFrequentist --job-mode interactive --parallel 5 -s 1:300:1 >> %s/%s_m%s/build_gof.sh" % (m, mass, m[:-5], year, m[:-5], year, m[:-5], year, outdirname, m, mass))
+
+            # # (3) observed data: CR-only, B-only
+            # os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_data_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 >> %s/%s_m%s/build_gof.sh" % (m, mass, m[:-5], year, m[:-5], year, m[:-5], year, outdirname, m, mass))
+
+            # # (4) toys: SB
+            # os.system("echo combineTool.py -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_KS -t 1 --toysFrequentist --job-mode interactive --parallel 10 -s 1:50:1 >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+
+            # # (5) hadd the toy outputs
+            # os.system("echo hadd -f higgsCombine_result_bonly_CRonly_KS.GoodnessOfFit.mH%s.123456.root higgsCombine_result_bonly_CRonly_KS.GoodnessOfFit.mH%s.\\*.root >> %s/%s_m%s/build_gof.sh" % (mass, mass, outdirname, m, mass))
+            # os.system("echo hadd -f higgsCombine_result_sb_KS.GoodnessOfFit.mH%s.123456.root higgsCombine_result_sb_KS.GoodnessOfFit.mH%s.\\*.root >> %s/%s_m%s/build_gof.sh" % (mass, mass, outdirname, m, mass))
+
+            # # (6) collect + plot
             # os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_bonly_CRonly_data_KS.GoodnessOfFit.mH%s.root higgsCombine_result_bonly_CRonly_KS.GoodnessOfFit.mH%s.123456.root -m %s -o gof_CRonly_KS.json >> %s/%s_m%s/build_gof.sh" % (mass, mass, mass, outdirname, m, mass))
             # os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_sb_data_KS.GoodnessOfFit.mH%s.root higgsCombine_result_sb_KS.GoodnessOfFit.mH%s.123456.root -m %s -o gof_KS.json >> %s/%s_m%s/build_gof.sh" % (mass, mass, mass, outdirname, m, mass))
             # os.system("echo plotGof.py gof_CRonly_KS.json --statistic KS --mass %s.0 -o gof_plot_CRonly_KS --title-right='%s_%s_CRonly_KS' >> %s/%s_m%s/build_gof.sh" % (mass, m, year, outdirname, m, mass))
             # os.system("echo plotGof.py gof_KS.json --statistic KS --mass %s.0 -o gof_plot_KS --title-right='%s_%s_KS' >> %s/%s_m%s/build_gof.sh" % (mass, m, year, outdirname, m, mass))
+
+            # # # KS GoF tests
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_data_KS >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+            
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh" % (m,mass,m[:-5],year,m[:-5],year,m[:-5], year, outdirname, m, mass))
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_bonly_CRonly_data_KS --setParametersForFit mask_pass%s%s=1 --setParametersForEval mask_pass%s%s=0 --freezeParameters r --setParameters r=0,mask_pass%s%s=1 >> %s/%s_m%s/build_gof.sh" % (m, mass,m[:-5],year,m[:-5],year,m[:-5], year, outdirname, m, mass))
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_KS -t 500 --toysFrequentist >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+            os.system("echo combine -M GoodnessOfFit -d %s_combined.root -m %s --algo=KS -n _result_sb_data_KS >> %s/%s_m%s/build_gof.sh" % (m, mass, outdirname, m, mass))
+            os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_bonly_CRonly_data_KS.GoodnessOfFit.mH%s.root higgsCombine_result_bonly_CRonly_KS.GoodnessOfFit.mH%s.123456.root -m %s -o gof_CRonly_KS.json >> %s/%s_m%s/build_gof.sh" % (mass, mass, mass, outdirname, m, mass))
+            os.system("echo combineTool.py -M CollectGoodnessOfFit --input higgsCombine_result_sb_data_KS.GoodnessOfFit.mH%s.root higgsCombine_result_sb_KS.GoodnessOfFit.mH%s.123456.root -m %s -o gof_KS.json >> %s/%s_m%s/build_gof.sh" % (mass, mass, mass, outdirname, m, mass))
+            os.system("echo plotGof.py gof_CRonly_KS.json --statistic KS --mass %s.0 -o gof_plot_CRonly_KS --title-right='%s_%s_CRonly_KS' >> %s/%s_m%s/build_gof.sh" % (mass, m, year, outdirname, m, mass))
+            os.system("echo plotGof.py gof_KS.json --statistic KS --mass %s.0 -o gof_plot_KS --title-right='%s_%s_KS' >> %s/%s_m%s/build_gof.sh" % (mass, m, year, outdirname, m, mass))
+
+
 
 if __name__ == "__main__":
 

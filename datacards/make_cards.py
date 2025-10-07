@@ -559,13 +559,19 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
             singlebinFail = False
         else:
             singlebinCR = False
-            singlebinFail = False
+            singlebinFail = True
         singlebin = singlebinFail and region == "fail"
         singlebinCR = singlebinCR or singlebin
         
+        singlebin2016APV = True 
+
+        if region == "pass" and c.ishadmu:
+            singlebintopCRpasshadmu= False
+            for i in range(100):
+                print('HOLY FUCK DONT FORGET TO TURN THIS OFF')
         # hadlep 
         # singlebin = True
-        # singlebinCR = False
+        # singlebinCR = Falsef
         # hadhad
         # singlebin = True (only in fail), False else
         # singlebinCR = True (only in fail), False else
@@ -588,35 +594,69 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
 
         # add signal region
         logger.info(f"Building {region}-signal region")
-        c.build_channel(
-            "SR",
-            region,
-            hists["sig"]["nom"],
-            qcdpred["sig"],
-            unblind,
-            singlebin=singlebin,
-            rebin = rebin,
-            debug=False,
-        )
 
-        #c.build_channel(
+        if region == "fail" and c.islephad and year == "2016APV":
+            c.build_channel(
+                "SR",
+                region,
+                hists["sig"]["nom"],
+                qcdpred["sig"],
+                unblind,
+                singlebin=singlebin2016APV,
+                rebin = rebin,
+                debug=False,
+            )
+        else:
+            c.build_channel(
+                "SR",
+                region,
+                hists["sig"]["nom"],
+                qcdpred["sig"],
+                unblind,
+                singlebin=singlebin,
+                rebin = rebin,
+                debug=False,
+            )
+
+        # c.build_channel(
         #    "qcdCR",
         #    region,
         #    hists["qcd_cr"]["nom"],
         #    qcdpred["qcd_cr"],
         #    singlebin=singlebinCR,
-        #)
+        # )
 
         # add top control region
-        logging.info(f"Building {region}-topCR region")
-        c.build_channel(
-            "topCR",
-            region,
-            hists["top_cr"]["nom"],
-            qcdpred["top_cr"],
-            singlebin=singlebinCR,
-            rebin=rebinCR
-        )
+        if region == "fail" and c.ishadmu and year == "2016APV":
+            logging.info(f"Building {region}-topCR region")
+            c.build_channel(
+                "topCR",
+                region,
+                hists["top_cr"]["nom"],
+                qcdpred["top_cr"],
+                singlebin=singlebin2016APV,
+                rebin=rebinCR
+            )
+        elif region == "loosepass" and c.ishadel and year == "2016APV":
+            logging.info(f"Building {region}-topCR region")
+            c.build_channel(
+                "topCR",
+                region,
+                hists["top_cr"]["nom"],
+                qcdpred["top_cr"],
+                singlebin=singlebinCR,
+                rebin=rebinCR
+            )
+        else:
+            logging.info(f"Building {region}-topCR region")
+            c.build_channel(
+                "topCR",
+                region,
+                hists["top_cr"]["nom"],
+                qcdpred["top_cr"],
+                singlebin=singlebinCR,
+                rebin=rebinCR
+            )
         
 
         # add wlnu control region
@@ -649,6 +689,26 @@ def createCards(hist_dict, cat, year, odir, unblind=True, no_syst=False):
     with open(os.path.join(f"{odir}", f"{cat}Model.pkl"), "wb") as fout:
         pickle.dump(c.model, fout, protocol=2)
 
+    print("---- Nuisance Parameters ----")
+    for par in c.model.parameters:  # assuming your model stores parameters in a 'parameters' attribute
+        if isinstance(par, rl.NuisanceParameter):
+            if "mcstat" in par.name: 
+                continue
+            print(f"Nuisance: {par.name}")
+            # If your nuisance parameter object stores its nominal value and variations,
+            # adjust these attribute names accordingly.
+            print(f"  Nominal: {par.value}")
+            print(f"Nuisance: {par.name}")
+
+            print("Attributes:", vars(par))
+
+            try:
+                up = par.get_variation('up')
+                dn = par.get_variation('dn')
+                print(f"  Up: {up}")
+                print(f"  Down: {dn}")
+            except Exception as e:
+                print("  (No explicit up/down variations available)")
 
 def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
     logger = logging.getLogger("load-hists")
@@ -712,7 +772,9 @@ def loadHists(histogram, year, sigscale, sigxs, var="met_nn_kin"):
 
         try:
             hist_unmapped = hists_unmapped["met_nn_kin"]
+            #hist_unmapped = hists_unmapped["nn_opt_kin"]
         except:
+            #hist_unmapped = hists_unmapped["nn_opt_kin"]
             logger.error(f"No {var} histogram in {histogram}{hs}.hist")
 
         for reg in regions:
@@ -797,6 +859,7 @@ def makeCards(hist, year, tag, sigscale, sigxs, categories, loglevel):
         sigscale,
         sigxs,
         var="met_nn_kin",
+        #var="nn_opt_kin"
     )
     #sys.exit()
     
